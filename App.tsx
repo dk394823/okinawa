@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { DATES, DaySchedule, ItemType, ItineraryState, TripData, ShoppingCategory } from './types';
 import { ItemCard, AddItemModal } from './components/ItineraryComponents';
 import { ResourcesPage } from './components/ResourcesPage';
-import { PlusIcon, CloudSunIcon, MapPinIcon, ListIcon, InfoIcon, DollarIcon, ShoppingBagIcon, EditIcon } from './components/Icons';
+import { PlusIcon, CloudSunIcon, MapPinIcon, ListIcon, InfoIcon, DollarIcon, ShoppingBagIcon, EditIcon, CloudIcon, DownloadIcon, ShareIcon } from './components/Icons';
 
 // Initialize with empty schedule structure
 const INITIAL_ITINERARY: ItineraryState = DATES.reduce((acc, curr) => {
@@ -19,7 +19,7 @@ const INITIAL_ITINERARY: ItineraryState = DATES.reduce((acc, curr) => {
 const INITIAL_SHOPPING_CATEGORIES: ShoppingCategory[] = [];
 
 const INITIAL_TRIP_DATA: TripData = {
-    appTitle: "2026 OKA探險隊",
+    appTitle: "OKA探險隊",
     appDeclaration: "帶著一顆快樂的心，該買就買！該吃就吃！",
     flights: {
         north: { outbound: { date: '2026-03-11', time: '09:00', arrivalTime: '11:30', airline: '', flightNumber: '', terminal: '' }, inbound: { date: '2026-03-15', time: '14:00', arrivalTime: '16:30', airline: '', flightNumber: '', terminal: '' } },
@@ -37,12 +37,118 @@ const INITIAL_TRIP_DATA: TripData = {
 
 type Tab = 'itinerary' | 'info' | 'money' | 'shopping';
 
+const SyncModal = ({ 
+    isOpen, 
+    onClose, 
+    onImport 
+}: { 
+    isOpen: boolean; 
+    onClose: () => void; 
+    onImport: (dataStr: string) => boolean;
+}) => {
+    const [mode, setMode] = useState<'SELECT' | 'EXPORT' | 'IMPORT'>('SELECT');
+    const [importStr, setImportStr] = useState('');
+    const [copySuccess, setCopySuccess] = useState(false);
+    const [importError, setImportError] = useState(false);
+
+    if (!isOpen) return null;
+
+    const handleCopy = () => {
+        // Generate export string from local storage or current state
+        const itin = localStorage.getItem('tabilog-okinawa-2026');
+        const data = localStorage.getItem('tabilog-okinawa-2026-data-v3');
+        if (itin && data) {
+            const exportObj = { i: JSON.parse(itin), d: JSON.parse(data) };
+            // Simple Base64 encoding to make it a single string (not encryption)
+            const exportStr = btoa(unescape(encodeURIComponent(JSON.stringify(exportObj))));
+            navigator.clipboard.writeText(exportStr).then(() => {
+                setCopySuccess(true);
+                setTimeout(() => setCopySuccess(false), 2000);
+            });
+        }
+    };
+
+    const handleImportSubmit = () => {
+        const success = onImport(importStr);
+        if (success) {
+            onClose();
+            setMode('SELECT');
+            setImportStr('');
+            setImportError(false);
+        } else {
+            setImportError(true);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+            <div className="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl p-6 relative">
+                <div className="flex justify-between items-center mb-6">
+                     <h3 className="text-xl font-bold text-sumi">雲端同步 (手動)</h3>
+                     <button onClick={onClose} className="bg-stone-100 p-2 rounded-full text-stone-500 hover:bg-stone-200">
+                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                     </button>
+                </div>
+
+                {mode === 'SELECT' && (
+                    <div className="grid grid-cols-2 gap-4">
+                        <button onClick={() => setMode('EXPORT')} className="bg-ocean/10 hover:bg-ocean/20 border border-ocean/20 rounded-2xl p-4 flex flex-col items-center gap-3 transition-colors">
+                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                <ShareIcon className="w-6 h-6 text-ocean" />
+                            </div>
+                            <span className="font-bold text-ocean">匯出資料</span>
+                            <span className="text-[10px] text-stone-500 leading-tight text-center">產生代碼傳給旅伴<br/>(我是主揪)</span>
+                        </button>
+                        <button onClick={() => setMode('IMPORT')} className="bg-terracotta/10 hover:bg-terracotta/20 border border-terracotta/20 rounded-2xl p-4 flex flex-col items-center gap-3 transition-colors">
+                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                <DownloadIcon className="w-6 h-6 text-terracotta" />
+                            </div>
+                            <span className="font-bold text-terracotta">匯入資料</span>
+                            <span className="text-[10px] text-stone-500 leading-tight text-center">貼上旅伴的代碼<br/>(同步行程)</span>
+                        </button>
+                    </div>
+                )}
+
+                {mode === 'EXPORT' && (
+                    <div className="space-y-4">
+                        <div className="bg-stone-50 p-4 rounded-xl border border-stone-100">
+                            <p className="text-xs text-stone-500 mb-2">點擊下方按鈕複製代碼，並傳送給旅伴。</p>
+                            <button onClick={handleCopy} className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${copySuccess ? 'bg-green-500 text-white' : 'bg-sumi text-white hover:bg-black'}`}>
+                                {copySuccess ? '已複製到剪貼簿！' : '複製同步碼'}
+                            </button>
+                        </div>
+                        <button onClick={() => setMode('SELECT')} className="text-xs text-stone-400 font-bold w-full text-center hover:underline">返回</button>
+                    </div>
+                )}
+
+                {mode === 'IMPORT' && (
+                    <div className="space-y-4">
+                         <textarea 
+                            value={importStr}
+                            onChange={e => setImportStr(e.target.value)}
+                            placeholder="在此貼上同步碼..."
+                            className="w-full h-32 bg-stone-50 rounded-xl p-3 text-xs font-mono border border-stone-200 focus:border-terracotta outline-none resize-none"
+                        />
+                        {importError && <p className="text-xs text-red-500 font-bold text-center">代碼無效，請確認是否完整複製。</p>}
+                        <div className="flex gap-2">
+                             <button onClick={() => setMode('SELECT')} className="flex-1 bg-stone-100 text-stone-500 font-bold py-3 rounded-xl text-xs">取消</button>
+                             <button onClick={handleImportSubmit} disabled={!importStr} className="flex-1 bg-terracotta text-white font-bold py-3 rounded-xl text-xs disabled:opacity-50">確認覆蓋</button>
+                        </div>
+                        <p className="text-[10px] text-stone-400 text-center">注意：這將會覆蓋您手機上目前的資料。</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
+
 export default function App() {
   const [activeDate, setActiveDate] = useState<string>(DATES[0].date);
   const [itinerary, setItinerary] = useState<ItineraryState>(INITIAL_ITINERARY);
   const [tripData, setTripData] = useState<TripData>(INITIAL_TRIP_DATA);
   const [activeTab, setActiveTab] = useState<Tab>('itinerary');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
   useEffect(() => {
@@ -78,8 +184,22 @@ export default function App() {
     localStorage.setItem('tabilog-okinawa-2026-data-v3', JSON.stringify(tripData));
   }, [tripData]);
 
+  const handleImportData = (dataStr: string) => {
+      try {
+          const decoded = JSON.parse(decodeURIComponent(escape(atob(dataStr))));
+          if (decoded.i && decoded.d) {
+              setItinerary(decoded.i);
+              setTripData(decoded.d);
+              return true;
+          }
+      } catch (e) {
+          console.error("Import failed", e);
+      }
+      return false;
+  };
 
-  const currentDay = itinerary[activeDate];
+  // Safe fallback for currentDay to prevent crashes if date is not found
+  const currentDay = itinerary[activeDate] || { items: [], dayLabel: 'Loading...', generalWeather: '' };
 
   const handleAddItem = (newItem: any) => {
     const itemWithId = { ...newItem, id: Date.now().toString() };
@@ -115,10 +235,17 @@ export default function App() {
     <div className="min-h-screen bg-[#fcfbf9] pb-28 max-w-md mx-auto border-x border-stone-100 shadow-2xl relative overflow-hidden text-sumi">
       
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-[#fcfbf9]/90 backdrop-blur-xl pt-20 pb-4 px-7 transition-all">
-        <div className="flex justify-between items-start mb-6">
-            <div className="flex-1 pr-4">
-                <p className="text-ocean text-[10px] font-bold tracking-[0.25em] mb-2 uppercase">Okinawa Trip</p>
+      <header className="sticky top-0 z-30 bg-[#fcfbf9]/95 backdrop-blur-xl pt-20 px-7 transition-all">
+        <div className="flex justify-between items-start mb-0">
+            <div className="flex-1">
+                <div className="flex justify-between items-center mb-1">
+                    <p className="text-ocean text-[10px] font-bold tracking-[0.25em] uppercase">Okinawa Trip</p>
+                    <button onClick={() => setIsSyncModalOpen(true)} className="flex items-center gap-1 bg-ocean/5 px-2 py-1 rounded-full hover:bg-ocean/10 transition-colors">
+                        <CloudIcon className="w-3 h-3 text-ocean" />
+                        <span className="text-[9px] font-bold text-ocean">雲端同步</span>
+                    </button>
+                </div>
+
                 {isEditingTitle ? (
                     <input 
                         type="text" 
@@ -146,21 +273,14 @@ export default function App() {
                     />
                 </div>
             </div>
-            
-            {/* Weather Pill */}
-            {activeTab === 'itinerary' && (
-                <div className="flex flex-col items-end pl-2 pt-1">
-                    <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-stone-100 shadow-sm">
-                        <CloudSunIcon className="w-4 h-4 text-terracotta" />
-                        <span className="text-xs font-bold text-stone-600 tracking-wide">{(currentDay?.generalWeather || "晴天").split(',')[0]}</span>
-                    </div>
-                </div>
-            )}
         </div>
+
+        {/* Divider Line */}
+        <div className="w-full h-px bg-stone-100 mt-4 mb-6 relative overflow-visible"></div>
 
         {/* Date Grid Tabs (5 Columns) */}
         {activeTab === 'itinerary' && (
-            <div className="grid grid-cols-5 gap-2 pb-4 pt-4 w-full">
+            <div className="grid grid-cols-5 gap-2 pb-4 pt-0 w-full">
             {DATES.map((d) => {
                 const isActive = d.date === activeDate;
                 const hasItems = itinerary[d.date]?.items.length > 0;
@@ -276,6 +396,12 @@ export default function App() {
         onClose={() => setIsModalOpen(false)}
         onAdd={handleAddItem}
         date={activeDate}
+      />
+
+      <SyncModal 
+        isOpen={isSyncModalOpen} 
+        onClose={() => setIsSyncModalOpen(false)} 
+        onImport={handleImportData}
       />
     </div>
   );
