@@ -121,31 +121,19 @@ const SyncModal = ({
         reader.onload = (event) => {
             try {
                 const jsonStr = event.target?.result as string;
-                // Basic validation
-                const decoded = JSON.parse(jsonStr);
-                if (decoded.i && decoded.d) {
-                    // Bypass the base64 decoding used in text import since we have raw JSON
-                    // We need to slightly modify onImport to handle object or adapt here.
-                    // For simplicity, let's just create a "fake" base64 string to reuse onImport 
-                    // OR better: let's update handleImportData to accept object or handle this logic.
-                    // Actually, simpler to just inject directly if we could, but onImport takes a string.
-                    // Let's re-encode it to passed to onImport for consistency, OR call a new prop. 
-                    // To keep things simple without changing props too much:
-                    
-                    const utf8Bytes = new TextEncoder().encode(jsonStr);
-                    const binaryStr = Array.from(utf8Bytes, byte => String.fromCharCode(byte)).join('');
-                    const base64 = btoa(binaryStr);
-                    const success = onImport(base64);
-                    
-                    if (success) {
-                        alert("備份檔還原成功！");
-                        onClose();
-                        setMode('SELECT');
-                    } else {
-                        alert("檔案格式錯誤");
-                    }
+                // Encode to Base64 to match the onImport signature expected format
+                const utf8Bytes = new TextEncoder().encode(jsonStr);
+                const binaryStr = Array.from(utf8Bytes, byte => String.fromCharCode(byte)).join('');
+                const base64 = btoa(binaryStr);
+                
+                const success = onImport(base64);
+                
+                if (success) {
+                    alert("備份檔還原成功！");
+                    onClose();
+                    setMode('SELECT');
                 } else {
-                    alert("無效的備份檔案");
+                    alert("檔案格式錯誤");
                 }
             } catch (err) {
                 alert("讀取檔案失敗");
@@ -304,7 +292,6 @@ export default function App() {
 
   const handleImportData = (dataStr: string) => {
       try {
-          // FIX: Use TextDecoder for UTF-8 support
           const binaryStr = atob(dataStr);
           const utf8Bytes = new Uint8Array(binaryStr.length);
           for (let i = 0; i < binaryStr.length; i++) {
@@ -314,8 +301,31 @@ export default function App() {
           const decoded = JSON.parse(decodedStr);
           
           if (decoded.i && decoded.d) {
+              // Smart Merge Logic: Preserve local photos if imported data lacks them
+              const newTripData = decoded.d as TripData;
+              const currentContacts = tripData.contacts;
+              const currentShoppingList = tripData.shoppingList;
+
+              // Merge Contacts: preserve avatar if new one is missing but local one exists
+              newTripData.contacts = newTripData.contacts.map(newC => {
+                  const localC = currentContacts.find(c => c.id === newC.id);
+                  if (localC && localC.avatar && !newC.avatar) {
+                      return { ...newC, avatar: localC.avatar };
+                  }
+                  return newC;
+              });
+
+              // Merge Shopping List: preserve image if new one is missing but local one exists
+              newTripData.shoppingList = newTripData.shoppingList.map(newItem => {
+                  const localItem = currentShoppingList.find(i => i.id === newItem.id);
+                  if (localItem && localItem.image && !newItem.image) {
+                      return { ...newItem, image: localItem.image };
+                  }
+                  return newItem;
+              });
+
               setItinerary(decoded.i);
-              setTripData(decoded.d);
+              setTripData(newTripData);
               return true;
           }
       } catch (e) {
@@ -324,7 +334,7 @@ export default function App() {
       return false;
   };
 
-  // FIX: Provide complete DaySchedule fallback to satisfy TS
+  // Provide complete DaySchedule fallback to satisfy TS
   const currentDay = itinerary[activeDate] || { 
       date: activeDate,
       dayLabel: 'Loading...', 
