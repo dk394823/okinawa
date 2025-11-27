@@ -2,6 +2,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { ItemType } from "../types";
 
 // Access the API key injected by Vite config
+// Note: In Vite, process.env is polyfilled by the define plugin in vite.config.ts
 const apiKey = process.env.API_KEY || '';
 
 const ai = new GoogleGenAI({ apiKey });
@@ -10,7 +11,6 @@ const MODEL_NAME = 'gemini-2.5-flash';
 
 /**
  * Gets a simulated weather forecast and a brief tip for a specific location and date.
- * Since 2026 is in the future, this asks Gemini for historical average/likely weather.
  */
 export const getLocationInsight = async (location: string, date: string, type: ItemType): Promise<{ weather: string; tip: string }> => {
   if (!apiKey) {
