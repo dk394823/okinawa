@@ -13,16 +13,8 @@ interface ResourcesPageProps {
 
 // --- Helper Functions ---
 const getShoppingColor = (color: ShoppingColorType) => {
-    // New Minimal Palette mapping
-    switch(color) {
-        case 'ocean': return { bg: 'bg-ocean', text: 'text-ocean', light: 'bg-cyan-50/50', border: 'border-ocean/10', hex: '#2c7a7b' };
-        case 'terracotta': return { bg: 'bg-terracotta', text: 'text-terracotta', light: 'bg-orange-50/50', border: 'border-terracotta/10', hex: '#dd6b20' };
-        case 'wasabi': return { bg: 'bg-wasabi', text: 'text-wasabi', light: 'bg-green-50/50', border: 'border-wasabi/10', hex: '#a3bc96' };
-        case 'sakura': return { bg: 'bg-sakura', text: 'text-pink-400', light: 'bg-pink-50/50', border: 'border-sakura/30', hex: '#f4d5dc' };
-        case 'slate': return { bg: 'bg-slate-400', text: 'text-slate-500', light: 'bg-slate-50/50', border: 'border-slate-200', hex: '#94a3b8' };
-        case 'coral': return { bg: 'bg-coral', text: 'text-coral', light: 'bg-red-50/50', border: 'border-coral/10', hex: '#ff8a80' };
-        default: return { bg: 'bg-stone-500', text: 'text-stone-500', light: 'bg-stone-50', border: 'border-stone-200', hex: '#78716c' };
-    }
+    // Fixed color: Ocean (Southern Group Flight Info style)
+    return { bg: 'bg-ocean', text: 'text-ocean', light: 'bg-cyan-50/50', border: 'border-ocean/10', hex: '#2c7a7b' };
 }
 
 const isPersonalExpense = (ex: Expense) => {
@@ -1031,14 +1023,14 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
         e.preventDefault();
         if(!newCatName) return;
         
-        const colors: ShoppingColorType[] = ['ocean', 'terracotta', 'wasabi', 'sakura', 'slate', 'coral'];
-        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        // Removed random color selection, defaulting to 'ocean' to match getShoppingColor logic
+        const fixedColor: ShoppingColorType = 'ocean';
 
         const newCat: ShoppingCategory = {
             id: Date.now().toString(),
             name: newCatName,
             icon: newCatEmoji,
-            color: randomColor
+            color: fixedColor
         };
         setTripData({
             ...tripData,
