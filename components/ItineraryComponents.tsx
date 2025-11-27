@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ItineraryItem, ItemType } from '../types';
-import { CarIcon, UtensilsIcon, CameraIcon, BedIcon, NavigationIcon, MapPinIcon, CloudSunIcon, SparklesIcon, CheckIcon, TrashIcon } from './Icons';
+import { CarIcon, UtensilsIcon, CameraIcon, BedIcon, NavigationIcon, MapPinIcon, CloudSunIcon, TrashIcon, CheckIcon } from './Icons';
 import { suggestItem, getLocationInsight } from '../services/geminiService';
 
 // --- Helper Functions ---
@@ -116,7 +116,8 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, isLast, onDelete }) =>
              {item.weatherForecast && (
                 <div className="flex items-center gap-1.5 opacity-60 mr-2">
                      <CloudSunIcon className="w-4 h-4 text-stone-400" />
-                     <span className="text-[10px] font-medium text-stone-500 tracking-wide">{item.weatherForecast.split(',')[0]}</span>
+                     {/* FIX: Add safe check for split to satisfy TS */}
+                     <span className="text-[10px] font-medium text-stone-500 tracking-wide">{(item.weatherForecast || '').split(',')[0]}</span>
                 </div>
              )}
         </div>
@@ -338,16 +339,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onA
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full bg-white border border-stone-200 rounded-xl p-4 pr-12 text-sm focus:ring-1 focus:ring-ocean focus:border-ocean outline-none shadow-sm placeholder:text-stone-300 transition-all"
                 />
-                 {!isHotel && (
-                     <button 
-                        type="button"
-                        onClick={handleMagicSuggest}
-                        className="absolute right-2 top-2 p-2 text-ocean bg-cyan-50 hover:bg-cyan-100 rounded-lg transition-colors"
-                        title="AI 推薦"
-                    >
-                        <SparklesIcon className="w-5 h-5" />
-                    </button>
-                 )}
+                 {/* Remove Sparkles icon to simplify */}
             </div>
           </div>
 

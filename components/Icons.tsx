@@ -248,3 +248,28 @@ export const GamepadIcon = ({ className }: { className?: string }) => (
         <rect width="20" height="12" x="2" y="6" rx="2" />
     </svg>
 );
+
+export const CloudIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M17.5 19c0-1.7-1.3-3-3-3h-1.1c-.2-1.7-1.7-3-3.4-3-1.9 0-3.5 1.6-3.5 3.5 0 .3.04.6.1.9-1.4.3-2.5 1.6-2.5 3.1 0 1.7 1.3 3 3 3h10.4c1.7 0 3-1.3 3-3Z" />
+    <path d="M12 2v2" />
+    <path d="m5 5 1.5 1.5" />
+    <path d="m19 5-1.5 1.5" />
+  </svg>
+);
+
+export const DownloadIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" x2="12" y1="15" y2="3" />
+  </svg>
+);
+
+export const ShareIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+    <polyline points="16 6 12 2 8 6" />
+    <line x1="12" x2="12" y1="2" y2="15" />
+  </svg>
+);

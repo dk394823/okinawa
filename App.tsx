@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { DATES, DaySchedule, ItemType, ItineraryState, TripData, ShoppingCategory } from './types';
 import { ItemCard, AddItemModal } from './components/ItineraryComponents';
 import { ResourcesPage } from './components/ResourcesPage';
-import { PlusIcon, CloudSunIcon, MapPinIcon, ListIcon, InfoIcon, DollarIcon, ShoppingBagIcon, EditIcon, CloudIcon, DownloadIcon, ShareIcon } from './components/Icons';
+import { PlusIcon, CloudSunIcon, ListIcon, InfoIcon, DollarIcon, ShoppingBagIcon, EditIcon, CloudIcon, DownloadIcon, ShareIcon } from './components/Icons';
 
 // Initialize with empty schedule structure
 const INITIAL_ITINERARY: ItineraryState = DATES.reduce((acc, curr) => {
@@ -59,8 +58,12 @@ const SyncModal = ({
         const data = localStorage.getItem('tabilog-okinawa-2026-data-v3');
         if (itin && data) {
             const exportObj = { i: JSON.parse(itin), d: JSON.parse(data) };
-            // Simple Base64 encoding to make it a single string (not encryption)
-            const exportStr = btoa(unescape(encodeURIComponent(JSON.stringify(exportObj))));
+            // FIX: Use TextEncoder for UTF-8 support (modern replacement for escape)
+            const jsonStr = JSON.stringify(exportObj);
+            const utf8Bytes = new TextEncoder().encode(jsonStr);
+            const binaryStr = Array.from(utf8Bytes, byte => String.fromCharCode(byte)).join('');
+            const exportStr = btoa(binaryStr);
+            
             navigator.clipboard.writeText(exportStr).then(() => {
                 setCopySuccess(true);
                 setTimeout(() => setCopySuccess(false), 2000);
@@ -186,7 +189,15 @@ export default function App() {
 
   const handleImportData = (dataStr: string) => {
       try {
-          const decoded = JSON.parse(decodeURIComponent(escape(atob(dataStr))));
+          // FIX: Use TextDecoder for UTF-8 support
+          const binaryStr = atob(dataStr);
+          const utf8Bytes = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i++) {
+              utf8Bytes[i] = binaryStr.charCodeAt(i);
+          }
+          const decodedStr = new TextDecoder().decode(utf8Bytes);
+          const decoded = JSON.parse(decodedStr);
+          
           if (decoded.i && decoded.d) {
               setItinerary(decoded.i);
               setTripData(decoded.d);
@@ -198,8 +209,15 @@ export default function App() {
       return false;
   };
 
-  // Safe fallback for currentDay to prevent crashes if date is not found
-  const currentDay = itinerary[activeDate] || { items: [], dayLabel: 'Loading...', generalWeather: '' };
+  // FIX: Provide complete DaySchedule fallback to satisfy TS
+  const currentDay = itinerary[activeDate] || { 
+      date: activeDate,
+      dayLabel: 'Loading...', 
+      weekday: '',
+      locationHint: '',
+      items: [], 
+      generalWeather: '' 
+  };
 
   const handleAddItem = (newItem: any) => {
     const itemWithId = { ...newItem, id: Date.now().toString() };
