@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { DATES, DaySchedule, ItemType, ItineraryState, TripData, ShoppingCategory } from './types';
 import { ItemCard, AddItemModal } from './components/ItineraryComponents';
 import { ResourcesPage } from './components/ResourcesPage';
-import { PlusIcon, CloudSunIcon, ListIcon, InfoIcon, DollarIcon, ShoppingBagIcon, EditIcon, CloudIcon, DownloadIcon, ShareIcon } from './components/Icons';
+import { PlusIcon, CloudSunIcon, ListIcon, InfoIcon, DollarIcon, ShoppingBagIcon, EditIcon, CloudIcon, DownloadIcon, ShareIcon, FileTextIcon, ImageOffIcon, PhotoIcon } from './components/Icons';
 
 // Initialize with empty schedule structure
 const INITIAL_ITINERARY: ItineraryState = DATES.reduce((acc, curr) => {
@@ -39,26 +40,34 @@ type Tab = 'itinerary' | 'info' | 'money' | 'shopping';
 const SyncModal = ({ 
     isOpen, 
     onClose, 
-    onImport 
+    onImport,
+    itinerary,
+    tripData
 }: { 
     isOpen: boolean; 
     onClose: () => void; 
     onImport: (dataStr: string) => boolean;
+    itinerary: ItineraryState;
+    tripData: TripData;
 }) => {
-    const [mode, setMode] = useState<'SELECT' | 'EXPORT' | 'IMPORT'>('SELECT');
+    const [mode, setMode] = useState<'SELECT' | 'EXPORT_LIGHT' | 'IMPORT'>('SELECT');
     const [importStr, setImportStr] = useState('');
     const [copySuccess, setCopySuccess] = useState(false);
     const [importError, setImportError] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     if (!isOpen) return null;
 
-    const handleCopy = () => {
-        // Generate export string from local storage or current state
-        const itin = localStorage.getItem('tabilog-okinawa-2026');
-        const data = localStorage.getItem('tabilog-okinawa-2026-data-v3');
-        if (itin && data) {
-            const exportObj = { i: JSON.parse(itin), d: JSON.parse(data) };
-            // FIX: Use TextEncoder for UTF-8 support (modern replacement for escape)
+    // Light Export: Text Only (Suitable for LINE)
+    const handleCopyLight = () => {
+        // Strip images from data to reduce size
+        const cleanTripData = { ...tripData };
+        cleanTripData.contacts = cleanTripData.contacts.map(c => ({...c, avatar: undefined}));
+        cleanTripData.shoppingList = cleanTripData.shoppingList.map(i => ({...i, image: undefined}));
+
+        const exportObj = { i: itinerary, d: cleanTripData };
+        
+        try {
             const jsonStr = JSON.stringify(exportObj);
             const utf8Bytes = new TextEncoder().encode(jsonStr);
             const binaryStr = Array.from(utf8Bytes, byte => String.fromCharCode(byte)).join('');
@@ -68,11 +77,32 @@ const SyncModal = ({
                 setCopySuccess(true);
                 setTimeout(() => setCopySuccess(false), 2000);
             });
+        } catch (e) {
+            alert("匯出失敗，請重試");
+        }
+    };
+
+    // Full Export: Download as File (Preserves Images)
+    const handleDownloadFull = () => {
+        const exportObj = { i: itinerary, d: tripData };
+        try {
+            const jsonStr = JSON.stringify(exportObj);
+            const blob = new Blob([jsonStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `okinawa-backup-${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            alert("備份檔建立失敗");
         }
     };
 
     const handleImportSubmit = () => {
-        const success = onImport(importStr);
+        const success = onImport(importStr.trim());
         if (success) {
             onClose();
             setMode('SELECT');
@@ -81,6 +111,47 @@ const SyncModal = ({
         } else {
             setImportError(true);
         }
+    };
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const jsonStr = event.target?.result as string;
+                // Basic validation
+                const decoded = JSON.parse(jsonStr);
+                if (decoded.i && decoded.d) {
+                    // Bypass the base64 decoding used in text import since we have raw JSON
+                    // We need to slightly modify onImport to handle object or adapt here.
+                    // For simplicity, let's just create a "fake" base64 string to reuse onImport 
+                    // OR better: let's update handleImportData to accept object or handle this logic.
+                    // Actually, simpler to just inject directly if we could, but onImport takes a string.
+                    // Let's re-encode it to passed to onImport for consistency, OR call a new prop. 
+                    // To keep things simple without changing props too much:
+                    
+                    const utf8Bytes = new TextEncoder().encode(jsonStr);
+                    const binaryStr = Array.from(utf8Bytes, byte => String.fromCharCode(byte)).join('');
+                    const base64 = btoa(binaryStr);
+                    const success = onImport(base64);
+                    
+                    if (success) {
+                        alert("備份檔還原成功！");
+                        onClose();
+                        setMode('SELECT');
+                    } else {
+                        alert("檔案格式錯誤");
+                    }
+                } else {
+                    alert("無效的備份檔案");
+                }
+            } catch (err) {
+                alert("讀取檔案失敗");
+            }
+        };
+        reader.readAsText(file);
     };
 
     return (
@@ -94,50 +165,94 @@ const SyncModal = ({
                 </div>
 
                 {mode === 'SELECT' && (
-                    <div className="grid grid-cols-2 gap-4">
-                        <button onClick={() => setMode('EXPORT')} className="bg-ocean/10 hover:bg-ocean/20 border border-ocean/20 rounded-2xl p-4 flex flex-col items-center gap-3 transition-colors">
-                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
-                                <ShareIcon className="w-6 h-6 text-ocean" />
-                            </div>
-                            <span className="font-bold text-ocean">匯出資料</span>
-                            <span className="text-[10px] text-stone-500 leading-tight text-center">產生代碼傳給旅伴<br/>(我是主揪)</span>
-                        </button>
-                        <button onClick={() => setMode('IMPORT')} className="bg-terracotta/10 hover:bg-terracotta/20 border border-terracotta/20 rounded-2xl p-4 flex flex-col items-center gap-3 transition-colors">
-                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
-                                <DownloadIcon className="w-6 h-6 text-terracotta" />
-                            </div>
-                            <span className="font-bold text-terracotta">匯入資料</span>
-                            <span className="text-[10px] text-stone-500 leading-tight text-center">貼上旅伴的代碼<br/>(同步行程)</span>
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                             {/* Light Export */}
+                            <button onClick={() => setMode('EXPORT_LIGHT')} className="bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-2xl p-4 flex flex-col items-center gap-2 transition-colors">
+                                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-stone-600">
+                                    <FileTextIcon className="w-5 h-5" />
+                                </div>
+                                <div className="text-center">
+                                    <span className="font-bold text-sumi text-sm block">輕量匯出</span>
+                                    <span className="text-[10px] text-stone-400 block mt-0.5">適合 LINE (無圖片)</span>
+                                </div>
+                            </button>
+
+                             {/* Full Export */}
+                             <button onClick={handleDownloadFull} className="bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-2xl p-4 flex flex-col items-center gap-2 transition-colors">
+                                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-ocean">
+                                    <DownloadIcon className="w-5 h-5" />
+                                </div>
+                                <div className="text-center">
+                                    <span className="font-bold text-ocean text-sm block">完整備份</span>
+                                    <span className="text-[10px] text-stone-400 block mt-0.5">下載檔案 (含圖片)</span>
+                                </div>
+                            </button>
+                        </div>
+
+                        <div className="relative py-2">
+                             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-stone-100"></div></div>
+                             <div className="relative flex justify-center"><span className="bg-white px-2 text-xs text-stone-300">OR</span></div>
+                        </div>
+
+                        {/* Import */}
+                        <button onClick={() => setMode('IMPORT')} className="w-full bg-terracotta/10 hover:bg-terracotta/20 border border-terracotta/20 rounded-2xl p-4 flex items-center justify-center gap-3 transition-colors">
+                            <ShareIcon className="w-5 h-5 text-terracotta" />
+                            <span className="font-bold text-terracotta">匯入資料 (代碼或檔案)</span>
                         </button>
                     </div>
                 )}
 
-                {mode === 'EXPORT' && (
+                {mode === 'EXPORT_LIGHT' && (
                     <div className="space-y-4">
-                        <div className="bg-stone-50 p-4 rounded-xl border border-stone-100">
-                            <p className="text-xs text-stone-500 mb-2">點擊下方按鈕複製代碼，並傳送給旅伴。</p>
-                            <button onClick={handleCopy} className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${copySuccess ? 'bg-green-500 text-white' : 'bg-sumi text-white hover:bg-black'}`}>
-                                {copySuccess ? '已複製到剪貼簿！' : '複製同步碼'}
-                            </button>
+                        <div className="bg-orange-50 p-4 rounded-xl border border-orange-100 flex gap-3 items-start">
+                             <ImageOffIcon className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
+                             <p className="text-xs text-orange-800 leading-relaxed">
+                                此模式將<b>移除所有照片</b>以縮短代碼長度，確保可透過通訊軟體傳送。若需備份照片，請使用「完整備份」。
+                             </p>
                         </div>
-                        <button onClick={() => setMode('SELECT')} className="text-xs text-stone-400 font-bold w-full text-center hover:underline">返回</button>
+                        <button onClick={handleCopyLight} className={`w-full py-4 rounded-xl font-bold text-sm transition-all shadow-md ${copySuccess ? 'bg-green-500 text-white' : 'bg-sumi text-white hover:bg-black'}`}>
+                            {copySuccess ? '已複製代碼！請貼到 LINE' : '複製純文字代碼'}
+                        </button>
+                        <button onClick={() => setMode('SELECT')} className="text-xs text-stone-400 font-bold w-full text-center hover:underline py-2">返回選單</button>
                     </div>
                 )}
 
                 {mode === 'IMPORT' && (
-                    <div className="space-y-4">
+                    <div className="space-y-5">
+                         {/* File Import */}
+                         <div className="bg-stone-50 border-2 border-dashed border-stone-200 rounded-xl p-4 text-center relative group hover:border-ocean/50 transition-colors">
+                             <input 
+                                type="file" 
+                                accept=".json"
+                                ref={fileInputRef}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                onChange={handleFileUpload}
+                             />
+                             <div className="pointer-events-none flex flex-col items-center gap-2">
+                                <CloudIcon className="w-6 h-6 text-stone-300 group-hover:text-ocean" />
+                                <span className="text-xs font-bold text-stone-500 group-hover:text-ocean">點擊上傳備份檔 (.json)</span>
+                             </div>
+                         </div>
+
+                         <div className="relative py-1">
+                             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-stone-100"></div></div>
+                             <div className="relative flex justify-center"><span className="bg-white px-2 text-xs text-stone-300">或貼上代碼</span></div>
+                        </div>
+
                          <textarea 
                             value={importStr}
                             onChange={e => setImportStr(e.target.value)}
-                            placeholder="在此貼上同步碼..."
-                            className="w-full h-32 bg-stone-50 rounded-xl p-3 text-xs font-mono border border-stone-200 focus:border-terracotta outline-none resize-none"
+                            placeholder="在此貼上輕量匯出代碼..."
+                            className="w-full h-24 bg-stone-50 rounded-xl p-3 text-xs font-mono border border-stone-200 focus:border-terracotta outline-none resize-none"
                         />
-                        {importError && <p className="text-xs text-red-500 font-bold text-center">代碼無效，請確認是否完整複製。</p>}
+                        
+                        {importError && <p className="text-xs text-red-500 font-bold text-center animate-pulse">代碼無效或格式錯誤</p>}
+                        
                         <div className="flex gap-2">
                              <button onClick={() => setMode('SELECT')} className="flex-1 bg-stone-100 text-stone-500 font-bold py-3 rounded-xl text-xs">取消</button>
-                             <button onClick={handleImportSubmit} disabled={!importStr} className="flex-1 bg-terracotta text-white font-bold py-3 rounded-xl text-xs disabled:opacity-50">確認覆蓋</button>
+                             <button onClick={handleImportSubmit} disabled={!importStr} className="flex-1 bg-terracotta text-white font-bold py-3 rounded-xl text-xs disabled:opacity-50">確認匯入</button>
                         </div>
-                        <p className="text-[10px] text-stone-400 text-center">注意：這將會覆蓋您手機上目前的資料。</p>
                     </div>
                 )}
             </div>
@@ -420,6 +535,8 @@ export default function App() {
         isOpen={isSyncModalOpen} 
         onClose={() => setIsSyncModalOpen(false)} 
         onImport={handleImportData}
+        itinerary={itinerary}
+        tripData={tripData}
       />
     </div>
   );
