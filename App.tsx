@@ -153,7 +153,7 @@ export default function App() {
                 <div className="flex flex-col items-end pl-2 pt-1">
                     <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-stone-100 shadow-sm">
                         <CloudSunIcon className="w-4 h-4 text-terracotta" />
-                        <span className="text-xs font-bold text-stone-600 tracking-wide">{currentDay.generalWeather.split(',')[0]}</span>
+                        <span className="text-xs font-bold text-stone-600 tracking-wide">{(currentDay.generalWeather || "晴天").split(',')[0]}</span>
                     </div>
                 </div>
             )}
