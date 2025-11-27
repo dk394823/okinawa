@@ -119,9 +119,8 @@ export const WalletIcon = ({ className }: { className?: string }) => (
 export const DollarIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <circle cx="12" cy="12" r="10" />
-      <path d="M12 16v-8" />
-      <path d="M9.5 8c0-1.5 1.5-2 2.5-2s2.5 1 2.5 3c0 1.5-1.5 2-2.5 2" />
-      <path d="M14.5 16c0 1.5-1.5 2-2.5 2s-2.5-1-2.5-3c0-1.5 1.5-2 2.5-2" />
+      <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+      <path d="M12 18V6" />
     </svg>
 );
   
@@ -272,24 +271,5 @@ export const ShareIcon = ({ className }: { className?: string }) => (
     <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
     <polyline points="16 6 12 2 8 6" />
     <line x1="12" x2="12" y1="2" y2="15" />
-  </svg>
-);
-
-export const FileTextIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-    <polyline points="14 2 14 8 20 8" />
-    <line x1="16" x2="8" y1="13" y2="13" />
-    <line x1="16" x2="8" y1="17" y2="17" />
-    <line x1="10" x2="8" y1="9" y2="9" />
-  </svg>
-);
-
-export const ImageOffIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <line x1="2" x2="22" y1="2" y2="22" />
-    <path d="M10.41 6.26A2 2 0 0 0 12 4h1.9a2 2 0 0 1 2 1.9V7h2a2 2 0 0 1 2 2v7.17" />
-    <path d="M14 13.5V20H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1.6" />
-    <circle cx="12" cy="13" r="3" />
   </svg>
 );
