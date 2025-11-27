@@ -115,7 +115,7 @@ export default function App() {
     <div className="min-h-screen bg-[#fcfbf9] pb-28 max-w-md mx-auto border-x border-stone-100 shadow-2xl relative overflow-hidden text-sumi">
       
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-[#fcfbf9]/90 backdrop-blur-xl pt-14 pb-4 px-7 transition-all">
+      <header className="sticky top-0 z-30 bg-[#fcfbf9]/90 backdrop-blur-xl pt-20 pb-4 px-7 transition-all">
         <div className="flex justify-between items-start mb-6">
             <div className="flex-1 pr-4">
                 <p className="text-ocean text-[10px] font-bold tracking-[0.25em] mb-2 uppercase">Okinawa Trip</p>
@@ -137,11 +137,10 @@ export default function App() {
                 
                 {/* Editable Declaration */}
                 <div className="mt-3 relative">
-                    <div className="absolute left-0 top-3 bottom-3 w-[2px] bg-terracotta/30 rounded-full"></div>
                     <textarea 
                         value={tripData.appDeclaration}
                         onChange={(e) => setTripData({...tripData, appDeclaration: e.target.value})}
-                        className="w-full text-xs font-medium text-stone-500 bg-transparent resize-none outline-none focus:text-stone-700 transition-all pl-3 py-1 leading-relaxed"
+                        className="w-full text-xs font-medium text-stone-500 bg-transparent resize-none outline-none focus:text-stone-700 transition-all py-1 leading-relaxed pl-0"
                         rows={2}
                         placeholder="點擊輸入旅遊宣言..."
                     />
@@ -153,15 +152,15 @@ export default function App() {
                 <div className="flex flex-col items-end pl-2 pt-1">
                     <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-stone-100 shadow-sm">
                         <CloudSunIcon className="w-4 h-4 text-terracotta" />
-                        <span className="text-xs font-bold text-stone-600 tracking-wide">{(currentDay.generalWeather || "晴天").split(',')[0]}</span>
+                        <span className="text-xs font-bold text-stone-600 tracking-wide">{(currentDay?.generalWeather || "晴天").split(',')[0]}</span>
                     </div>
                 </div>
             )}
         </div>
 
-        {/* Floating Pills Date Tabs */}
+        {/* Date Grid Tabs (5 Columns) */}
         {activeTab === 'itinerary' && (
-            <div className="flex overflow-x-auto no-scrollbar gap-2 pb-4 pt-2 -mx-7 px-7 snap-x tap-highlight-transparent pt-2">
+            <div className="grid grid-cols-5 gap-2 pb-4 pt-4 w-full">
             {DATES.map((d) => {
                 const isActive = d.date === activeDate;
                 const hasItems = itinerary[d.date]?.items.length > 0;
@@ -169,7 +168,7 @@ export default function App() {
                 <button
                     key={d.date}
                     onClick={() => setActiveDate(d.date)}
-                    className={`snap-start flex-shrink-0 flex flex-col items-center justify-center w-[4.2rem] h-16 rounded-2xl transition-all duration-300 border ${
+                    className={`flex flex-col items-center justify-center w-full h-16 rounded-2xl transition-all duration-300 border ${
                     isActive 
                     ? 'bg-ocean border-ocean text-white shadow-lg shadow-ocean/30 scale-105' 
                     : 'bg-white border-stone-100 text-stone-400 hover:border-stone-200'
