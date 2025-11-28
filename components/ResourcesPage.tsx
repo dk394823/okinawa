@@ -1,7 +1,6 @@
 
-
 import React, { useState, useEffect, useRef } from 'react';
-import { TripData, FlightInfo, ItineraryState, ItemType, DaySchedule, ItineraryItem, ShoppingCategory, ShoppingColorType, ShoppingItem, Expense, ShoppingLocation } from '../types';
+import { TripData, FlightInfo, ItineraryState, ItemType, DaySchedule, ItineraryItem, ShoppingCategory, ShoppingColorType, ShoppingItem, Expense, ShoppingLocation, Contact } from '../types';
 import { PlaneIcon, WalletIcon, PhoneIcon, BedIcon, ShoppingBagIcon, PlusIcon, CheckIcon, CalculatorIcon, ExchangeIcon, EditIcon, ZapIcon, ArrowLeftIcon, TrashIcon, PhotoIcon, UsersIcon, PaperPlaneIcon, MapPinIcon, NavigationIcon, CameraIcon, SimplePlaneIcon, PlaneTakeoffIcon, GlobeIcon, GamepadIcon, DollarIcon } from './Icons';
 
 interface ResourcesPageProps {
@@ -81,7 +80,7 @@ const SecureCallButton = ({ number, display, className = "" }: { number: string,
             className={`transition-all duration-300 flex items-center gap-3 group ${className} ${confirm ? 'bg-rose-900 !text-white px-6 py-2 rounded-full shadow-lg justify-center w-full' : ''}`}
         >
             {confirm ? (
-                <span className="text-lg font-bold tracking-widest flex items-center gap-2 !text-white">
+                <span className="text-lg font-black tracking-widest flex items-center gap-2 !text-white">
                     <PhoneIcon className="w-5 h-5 fill-current" />
                     確認撥打?
                 </span>
@@ -148,10 +147,10 @@ const FlightGroupCard = ({
     const renderFlightVisual = (leg: 'out' | 'in', from: string, to: string, info: FlightInfo) => (
         <div className="flex flex-col w-full">
             <div className="flex items-center justify-between mb-2">
-                <span className={`text-[10px] font-bold text-white px-2 py-0.5 rounded-sm tracking-wider ${leg === 'out' ? 'bg-stone-400' : 'bg-stone-400'}`}>
+                <span className={`text-[10px] font-black text-white px-2 py-0.5 rounded-sm tracking-wider ${leg === 'out' ? 'bg-stone-400' : 'bg-stone-400'}`}>
                     {leg === 'out' ? '去程 OUTBOUND' : '回程 INBOUND'}
                 </span>
-                <span className="font-mono font-bold text-sumi text-xs">{info.date}</span>
+                <span className="font-mono font-black text-sumi text-xs">{info.date}</span>
             </div>
 
             <div className="flex items-center justify-between w-full mb-2">
@@ -169,14 +168,14 @@ const FlightGroupCard = ({
 
             <div className="flex justify-between w-full text-[10px] text-stone-400 font-bold px-1">
                 <div className="w-14 text-center flex flex-col">
-                    <span className="text-sm text-sumi font-mono">{info.time || '--:--'}</span>
+                    <span className="text-sm text-sumi font-mono font-black">{info.time || '--:--'}</span>
                     <span className="text-[9px] text-stone-300">DEP</span>
                 </div>
                 <div className="flex-1 text-center pt-1">
-                    <span className="text-[10px] text-stone-300 font-medium tracking-widest">{info.flightNumber || 'FLIGHT NO.'}</span>
+                    <span className="text-[10px] text-stone-300 font-bold tracking-widest">{info.flightNumber || 'FLIGHT NO.'}</span>
                 </div>
                 <div className="w-14 text-center flex flex-col">
-                    <span className="text-sm text-sumi font-mono">{info.arrivalTime || '--:--'}</span>
+                    <span className="text-sm text-sumi font-mono font-black">{info.arrivalTime || '--:--'}</span>
                     <span className="text-[9px] text-stone-300">ARR</span>
                 </div>
             </div>
@@ -189,7 +188,7 @@ const FlightGroupCard = ({
                 <div className={`h-1.5 w-full ${colorClass} opacity-80`}></div>
                 <div className="p-5">
                      <div className="flex justify-between items-center mb-6">
-                        <h3 className={`text-[10px] font-bold tracking-[0.2em] uppercase ${colorClass.replace('bg-', 'text-')}`}>{title}</h3>
+                        <h3 className={`text-[10px] font-black tracking-[0.2em] uppercase ${colorClass.replace('bg-', 'text-')}`}>{title}</h3>
                         <button onClick={() => setIsEditing(true)} className="text-stone-300 hover:text-stone-500 transition-colors">
                             <EditIcon className="w-4 h-4" />
                         </button>
@@ -274,10 +273,12 @@ const FlightGroupCard = ({
 }
 
 const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData, setTripData: (d: TripData) => void, itinerary: ItineraryState }) => {
-    const [newContactName, setNewContactName] = useState('');
-    const [newContactPhone, setNewContactPhone] = useState('');
-    const [newContactAvatar, setNewContactAvatar] = useState<string | undefined>(undefined);
+    const [contactName, setContactName] = useState('');
+    const [contactPhone, setContactPhone] = useState('');
+    const [contactAvatar, setContactAvatar] = useState<string | undefined>(undefined);
+    const [editingContactId, setEditingContactId] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const contactFormRef = useRef<HTMLFormElement>(null);
 
     const updateFlights = (group: 'north' | 'south', out: FlightInfo, inb: FlightInfo) => {
         setTripData({
@@ -315,7 +316,7 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx?.drawImage(img, 0, 0, width, height);
-                    setNewContactAvatar(canvas.toDataURL('image/jpeg', 0.7));
+                    setContactAvatar(canvas.toDataURL('image/jpeg', 0.7));
                 }
                 img.src = event.target?.result as string;
             };
@@ -323,29 +324,35 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
         }
     }
 
-    const handleAddContact = (e: React.FormEvent) => {
+    const handleSaveContact = (e: React.FormEvent) => {
         e.preventDefault();
-        if(newContactName.trim()) {
+        if(!contactName.trim()) return;
+
+        if (editingContactId) {
+             setTripData({
+                ...tripData,
+                contacts: tripData.contacts.map(c => c.id === editingContactId ? { 
+                    ...c, 
+                    name: contactName, 
+                    phone: contactPhone,
+                    avatar: contactAvatar
+                } : c)
+            });
+            setEditingContactId(null);
+        } else {
             setTripData({
                 ...tripData,
                 contacts: [...tripData.contacts, { 
                     id: Date.now().toString(), 
-                    name: newContactName, 
-                    phone: newContactPhone,
-                    avatar: newContactAvatar
+                    name: contactName, 
+                    phone: contactPhone,
+                    avatar: contactAvatar
                 }]
             });
-            setNewContactName('');
-            setNewContactPhone('');
-            setNewContactAvatar(undefined);
         }
-    }
-
-    const handleUpdateContact = (id: string, field: 'phone' | 'name', value: string) => {
-        setTripData({
-            ...tripData,
-            contacts: tripData.contacts.map(c => c.id === id ? { ...c, [field]: value } : c)
-        })
+        setContactName('');
+        setContactPhone('');
+        setContactAvatar(undefined);
     }
 
     const handleDeleteContact = (id: string) => {
@@ -353,6 +360,17 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
             ...tripData,
             contacts: tripData.contacts.filter(c => c.id !== id)
         })
+    }
+
+    const handleEditContact = (contact: Contact) => {
+        setContactName(contact.name);
+        setContactPhone(contact.phone);
+        setContactAvatar(contact.avatar);
+        setEditingContactId(contact.id);
+        
+        if (contactFormRef.current) {
+            contactFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     }
     
     const hotelList = Object.values(itinerary)
@@ -374,7 +392,7 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
                     <div className="w-8 h-8 rounded-full bg-ocean/10 flex items-center justify-center">
                         <PaperPlaneIcon className="w-4 h-4 text-ocean" />
                     </div>
-                    <h2 className="text-lg font-bold text-sumi">航班資訊</h2>
+                    <h2 className="text-lg font-black text-sumi">航班資訊</h2>
                 </div>
                 
                 <FlightGroupCard 
@@ -402,7 +420,7 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
                     <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
                         <BedIcon className="w-4 h-4 text-slate-500" />
                     </div>
-                    <h2 className="text-lg font-bold text-sumi">住宿清單</h2>
+                    <h2 className="text-lg font-black text-sumi">住宿清單</h2>
                 </div>
                 <div className="bg-white rounded-2xl p-6 border border-stone-100 shadow-soft">
                     {hotelList.length === 0 ? (
@@ -418,7 +436,7 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
                                         <span className="block text-xs font-mono font-bold text-sumi mt-1">{hotel.time}</span>
                                     </div>
                                     <div className="flex-1">
-                                        <h4 className="font-bold text-sumi text-sm">{hotel.location}</h4>
+                                        <h4 className="font-extrabold text-sumi text-sm">{hotel.location}</h4>
                                         <p className="text-xs text-stone-500 mt-1 whitespace-pre-line leading-relaxed">{hotel.notes || hotel.title}</p>
                                     </div>
                                 </div>
@@ -434,7 +452,7 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
                     <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center">
                         <PhoneIcon className="w-4 h-4 text-rose-900" />
                     </div>
-                    <h2 className="text-lg font-bold text-sumi">緊急聯絡</h2>
+                    <h2 className="text-lg font-black text-sumi">緊急聯絡</h2>
                 </div>
                 
                 <div className="space-y-4">
@@ -453,7 +471,7 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
 
                      {/* Visitor Hotline */}
                      <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-4">
-                         <p className="text-sm font-bold text-sumi mb-1">訪日外國人 醫療&急難熱線</p>
+                         <p className="text-sm font-black text-sumi mb-1">訪日外國人 醫療&急難熱線</p>
                          <SecureCallButton 
                             number="05038162787" 
                             display="050-3816-2787" 
@@ -467,7 +485,7 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
                      {/* Naha Office */}
                      <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-4 space-y-1">
                          <div>
-                            <p className="text-sm font-bold text-sumi mb-0.5">台北駐日經濟文化代表處那霸分處</p>
+                            <p className="text-sm font-black text-sumi mb-0.5">台北駐日經濟文化代表處那霸分處</p>
                             <SecureCallButton 
                                 number="0988627008" 
                                 display="098-862-7008" 
@@ -476,7 +494,7 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
                          </div>
                          
                          <div>
-                             <p className="text-sm font-bold text-sumi mb-0.5 mt-2">緊急時撥打</p>
+                             <p className="text-sm font-black text-sumi mb-0.5 mt-2">緊急時撥打</p>
                              <SecureCallButton 
                                 number="08080560122" 
                                 display="080-8056-0122" 
@@ -493,54 +511,49 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
                     <div className="w-8 h-8 rounded-full bg-wasabi/10 flex items-center justify-center">
                         <UsersIcon className="w-4 h-4 text-wasabi" />
                     </div>
-                    <h2 className="text-lg font-bold text-sumi">旅伴資訊</h2>
+                    <h2 className="text-lg font-black text-sumi">旅伴資訊</h2>
                 </div>
                 
                 <div className="space-y-3">
                      {tripData.contacts.map(contact => (
-                        <div key={contact.id} className="bg-white border border-stone-100 p-3 rounded-2xl flex items-center justify-between shadow-sm">
+                        <div key={contact.id} className={`bg-white border p-3 rounded-2xl flex items-center justify-between shadow-sm transition-colors ${editingContactId === contact.id ? 'border-terracotta ring-1 ring-terracotta bg-orange-50/10' : 'border-stone-100'}`}>
                             <div className="flex items-center gap-3 flex-1 min-w-0">
                                 <div className="w-12 h-12 rounded-full bg-stone-50 flex-shrink-0 flex items-center justify-center overflow-hidden border border-stone-100">
                                     {renderAvatar(contact.avatar, contact.name)}
                                 </div>
-                                <div className="flex flex-col flex-1 min-w-0 mr-2 space-y-1">
-                                     <input 
-                                        type="text" 
-                                        value={contact.name}
-                                        onChange={(e) => handleUpdateContact(contact.id, 'name', e.target.value)}
-                                        className="text-sm font-bold text-sumi bg-transparent outline-none w-full"
-                                    />
-                                    <input 
-                                        type="tel" 
-                                        placeholder="輸入電話號碼"
-                                        value={contact.phone}
-                                        onChange={(e) => handleUpdateContact(contact.id, 'phone', e.target.value)}
-                                        className="text-xs bg-transparent outline-none text-stone-500 placeholder:text-stone-300 font-mono w-full"
-                                    />
+                                <div className="flex flex-col flex-1 min-w-0 mr-2 space-y-0.5">
+                                     <span className="text-sm font-bold text-sumi truncate">{contact.name}</span>
+                                     <span className="text-xs font-mono text-stone-400 truncate">{contact.phone}</span>
                                 </div>
                             </div>
 
                             <div className="flex items-center gap-2 flex-shrink-0">
                                 {contact.phone && (
-                                    <a href={`tel:${contact.phone}`} className="p-2.5 bg-green-50 text-green-600 rounded-full hover:bg-green-100 transition-colors">
+                                    <a href={`tel:${contact.phone}`} className="p-2 bg-green-50 text-green-600 rounded-full hover:bg-green-100 transition-colors">
                                         <PhoneIcon className="w-3.5 h-3.5" />
                                     </a>
                                 )}
-                                <DeleteButton onDelete={() => handleDeleteContact(contact.id)} className="p-2.5 bg-stone-50 text-stone-400 rounded-full hover:bg-stone-100" iconSize="w-3.5 h-3.5" />
+                                <button onClick={() => handleEditContact(contact)} className={`p-2 rounded-full hover:bg-stone-100 ${editingContactId === contact.id ? 'bg-terracotta text-white hover:bg-terracotta' : 'bg-stone-50 text-stone-400'}`}>
+                                    <EditIcon className="w-3.5 h-3.5" />
+                                </button>
+                                <DeleteButton onDelete={() => handleDeleteContact(contact.id)} className="p-2 bg-stone-50 text-stone-400 rounded-full hover:bg-stone-100" iconSize="w-3.5 h-3.5" />
                             </div>
                         </div>
                      ))}
                      
-                     <form onSubmit={handleAddContact} className="bg-stone-50 border border-stone-100 border-dashed rounded-2xl p-3 flex flex-col gap-3">
+                     <form ref={contactFormRef} onSubmit={handleSaveContact} className={`bg-stone-50 border border-stone-100 border-dashed rounded-2xl p-4 flex flex-col gap-3 transition-colors ${editingContactId ? 'bg-orange-50/50 border-orange-100' : ''}`}>
+                         <p className={`text-xs font-bold ${editingContactId ? 'text-terracotta' : 'text-stone-400'}`}>
+                            {editingContactId ? `正在編輯：${contactName}` : '新增旅伴'}
+                         </p>
                          <div className="flex items-center gap-3">
                             <div className="relative">
                                 <button 
                                     type="button" 
                                     onClick={() => fileInputRef.current?.click()}
-                                    className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all overflow-hidden ${newContactAvatar ? 'border-transparent shadow-sm' : 'border-stone-200 bg-white text-stone-300 hover:bg-stone-100'}`}
+                                    className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all overflow-hidden ${contactAvatar ? 'border-transparent shadow-sm' : 'border-stone-200 bg-white text-stone-300 hover:bg-stone-100'}`}
                                 >
-                                    {newContactAvatar ? (
-                                        <img src={newContactAvatar} className="w-full h-full object-cover" />
+                                    {contactAvatar ? (
+                                        <img src={contactAvatar} className="w-full h-full object-cover" />
                                     ) : (
                                         <CameraIcon className="w-5 h-5 text-stone-300" />
                                     )}
@@ -553,20 +566,23 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
                                 <input 
                                     type="text" 
                                     placeholder="姓名"
-                                    value={newContactName}
-                                    onChange={e => setNewContactName(e.target.value)}
+                                    value={contactName}
+                                    onChange={e => setContactName(e.target.value)}
                                     className="bg-white rounded-xl px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-stone-200"
                                 />
                                 <input 
                                     type="tel" 
                                     placeholder="電話"
-                                    value={newContactPhone}
-                                    onChange={e => setNewContactPhone(e.target.value)}
+                                    value={contactPhone}
+                                    onChange={e => setContactPhone(e.target.value)}
                                     className="bg-white rounded-xl px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-stone-200"
                                 />
                             </div>
-                             <button type="submit" disabled={!newContactName.trim()} className="bg-sumi text-white px-4 h-auto rounded-xl text-xs font-bold disabled:opacity-50 hover:bg-black transition-all">
-                                 新增
+                         </div>
+                         <div className="flex gap-2">
+                             {editingContactId && <button type="button" onClick={() => { setEditingContactId(null); setContactName(''); setContactPhone(''); setContactAvatar(undefined); }} className="flex-1 bg-stone-200 text-stone-500 font-bold py-3 rounded-xl text-xs">取消</button>}
+                             <button type="submit" disabled={!contactName.trim()} className="flex-1 bg-sumi text-white h-auto py-3 rounded-xl text-xs font-bold disabled:opacity-50 hover:bg-black transition-all">
+                                 {editingContactId ? '更新資料' : '新增'}
                              </button>
                          </div>
                      </form>
@@ -678,7 +694,7 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
                 <div className="flex items-center justify-between mb-6 relative z-10">
                      <div className="flex items-center gap-2">
                          <CalculatorIcon className="w-5 h-5 text-wasabi" />
-                         <h2 className="font-bold tracking-wide">匯率換算</h2>
+                         <h2 className="font-black tracking-wide">匯率換算</h2>
                      </div>
                      <a 
                         href="https://www.google.com/finance/quote/JPY-TWD" 
@@ -727,7 +743,7 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
              <section className="bg-white rounded-3xl p-6 border border-stone-100 shadow-soft">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="text-lg font-bold text-sumi">結算看板</h2>
+                        <h2 className="text-lg font-black text-sumi">結算看板</h2>
                         <span className="text-[10px] font-mono text-stone-400 bg-stone-50 px-2 py-1 rounded">總公帳: ¥{totalGroupSpend.toLocaleString()}</span>
                     </div>
                     <button 
@@ -778,7 +794,7 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
                     <div className="w-8 h-8 rounded-full bg-wasabi/10 flex items-center justify-center">
                         <WalletIcon className="w-4 h-4 text-wasabi" />
                     </div>
-                    <h2 className="text-lg font-bold text-sumi">新增款項</h2>
+                    <h2 className="text-lg font-black text-sumi">新增款項</h2>
                 </div>
                 
                 <form onSubmit={handleAddExpense} className="bg-white p-6 rounded-3xl border border-stone-100 shadow-soft mb-10">
@@ -928,7 +944,7 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
 
                                     <div className="flex justify-between items-start pl-3">
                                         <div>
-                                            <p className="font-bold text-sumi text-base">{ex.title}</p>
+                                            <p className="font-extrabold text-sumi text-base">{ex.title}</p>
                                             <div className="flex items-center gap-2 mt-1">
                                                 <span className={`text-[10px] font-bold text-white px-2 py-0.5 rounded ${isPersonal ? 'bg-stone-400' : 'bg-stone-600'}`}>
                                                     {isPersonal ? `${ex.payer}` : `${ex.payer} 付`}
@@ -978,8 +994,10 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
     const [newItemName, setNewItemName] = useState('');
     const [newItemNote, setNewItemNote] = useState('');
     const [newItemImage, setNewItemImage] = useState<string | undefined>(undefined);
+    const [editingItemId, setEditingItemId] = useState<string | null>(null);
     
     const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+    const [isEditingCategory, setIsEditingCategory] = useState<string | null>(null);
     const [newCatName, setNewCatName] = useState('');
     const [newCatEmoji, setNewCatEmoji] = useState('😊');
 
@@ -993,6 +1011,7 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const locationFormRef = useRef<HTMLFormElement>(null);
+    const itemFormRef = useRef<HTMLDivElement>(null);
 
     const activeCategory = tripData.shoppingCategories.find(c => c.id === activeCategoryId);
     const categoryItems = tripData.shoppingList.filter(i => i.categoryId === activeCategoryId);
@@ -1019,23 +1038,31 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
         }
     }
 
-    const handleCreateCategory = (e: React.FormEvent) => {
+    const handleCreateOrEditCategory = (e: React.FormEvent) => {
         e.preventDefault();
         if(!newCatName) return;
         
-        // Removed random color selection, defaulting to 'ocean' to match getShoppingColor logic
         const fixedColor: ShoppingColorType = 'ocean';
 
-        const newCat: ShoppingCategory = {
-            id: Date.now().toString(),
-            name: newCatName,
-            icon: newCatEmoji,
-            color: fixedColor
-        };
-        setTripData({
-            ...tripData,
-            shoppingCategories: [...tripData.shoppingCategories, newCat]
-        });
+        if (isEditingCategory) {
+             setTripData({
+                ...tripData,
+                shoppingCategories: tripData.shoppingCategories.map(c => c.id === isEditingCategory ? { ...c, name: newCatName, icon: newCatEmoji } : c)
+            });
+            setIsEditingCategory(null);
+        } else {
+             const newCat: ShoppingCategory = {
+                id: Date.now().toString(),
+                name: newCatName,
+                icon: newCatEmoji,
+                color: fixedColor
+            };
+            setTripData({
+                ...tripData,
+                shoppingCategories: [...tripData.shoppingCategories, newCat]
+            });
+        }
+       
         setNewCatName('');
         setNewCatEmoji('😊');
         setIsCreatingCategory(false);
@@ -1045,17 +1072,31 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
         e.preventDefault();
         if(!newItemName || !activeCategoryId) return;
 
-        setTripData({
-            ...tripData,
-            shoppingList: [...tripData.shoppingList, {
-                id: Date.now().toString(),
-                name: newItemName,
-                note: newItemNote,
-                categoryId: activeCategoryId,
-                isBought: false,
-                image: newItemImage
-            }]
-        });
+        if (editingItemId) {
+            setTripData({
+                ...tripData,
+                shoppingList: tripData.shoppingList.map(item => item.id === editingItemId ? {
+                    ...item,
+                    name: newItemName,
+                    note: newItemNote,
+                    image: newItemImage
+                } : item)
+            });
+            setEditingItemId(null);
+        } else {
+            setTripData({
+                ...tripData,
+                shoppingList: [...tripData.shoppingList, {
+                    id: Date.now().toString(),
+                    name: newItemName,
+                    note: newItemNote,
+                    categoryId: activeCategoryId,
+                    isBought: false,
+                    image: newItemImage
+                }]
+            });
+        }
+        
         setNewItemName('');
         setNewItemNote('');
         setNewItemImage(undefined);
@@ -1117,9 +1158,27 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
         setNewLocNote(loc.note || '');
         setEditingLocId(loc.id);
         
-        // Scroll to form with better UX
         if (locationFormRef.current) {
             locationFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    };
+
+    const startEditCategory = (cat: ShoppingCategory, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setNewCatName(cat.name);
+        setNewCatEmoji(cat.icon);
+        setIsEditingCategory(cat.id);
+        setIsCreatingCategory(true);
+    };
+
+    const startEditItem = (item: ShoppingItem) => {
+        setNewItemName(item.name);
+        setNewItemNote(item.note || '');
+        setNewItemImage(item.image);
+        setEditingItemId(item.id);
+
+        if (itemFormRef.current) {
+            itemFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     };
 
@@ -1132,74 +1191,100 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                     <button onClick={() => setActiveCategoryId(null)} className="p-2 bg-stone-100 rounded-full hover:bg-stone-200">
                         <ArrowLeftIcon className="w-5 h-5 text-stone-500" />
                     </button>
-                    <div>
-                        <h2 className="text-xl font-bold text-sumi flex items-center gap-2">
+                    <div className="flex-1">
+                        <h2 className="text-xl font-black text-sumi flex items-center gap-2">
                             <span>{activeCategory?.icon}</span>
                             <span>{activeCategory?.name}</span>
+                            <button onClick={(e) => activeCategory && startEditCategory(activeCategory, e)} className="p-1 text-stone-300 hover:text-stone-500">
+                                <EditIcon className="w-4 h-4" />
+                            </button>
                         </h2>
                     </div>
                     <DeleteButton onDelete={() => deleteCategory(activeCategoryId)} className="ml-auto p-2 bg-rose-50 text-rose-500 rounded-full" />
                 </div>
+                
+                {/* Edit Category Form (reused) */}
+                 {isCreatingCategory && isEditingCategory && (
+                    <form onSubmit={handleCreateOrEditCategory} className="bg-stone-50 border border-stone-100 border-dashed p-4 rounded-2xl mb-6 animate-[fadeIn_0.2s_ease-out]">
+                        <p className="text-xs font-bold text-terracotta mb-3">編輯分類</p>
+                        <div className="flex gap-3 mb-3">
+                            <input type="text" value={newCatEmoji} onChange={e => setNewCatEmoji(e.target.value)} className="w-14 text-center bg-white rounded-xl text-xl outline-none shadow-sm" maxLength={2} />
+                            <input type="text" value={newCatName} onChange={e => setNewCatName(e.target.value)} className="flex-1 bg-white px-4 py-3 rounded-xl text-sm outline-none shadow-sm" autoFocus />
+                        </div>
+                        <div className="flex gap-2">
+                            <button type="button" onClick={() => { setIsCreatingCategory(false); setIsEditingCategory(null); setNewCatName(''); setNewCatEmoji('😊'); }} className="flex-1 bg-stone-200 text-stone-500 font-bold py-3 rounded-xl text-xs">取消</button>
+                            <button type="submit" className="flex-1 bg-coral text-white font-bold py-3 rounded-xl text-xs">更新</button>
+                        </div>
+                    </form>
+                )}
 
-                <div className="grid grid-cols-2 gap-4 mb-20">
+                <div className="flex flex-col gap-3 mb-10">
                     {categoryItems.map(item => (
                         <div 
                             key={item.id} 
                             onClick={() => setViewingItem(item)}
-                            className="bg-white rounded-2xl p-3 shadow-soft border border-stone-50 relative overflow-hidden group active:scale-[0.98] transition-all cursor-pointer h-40 flex flex-col"
+                            className={`bg-white rounded-2xl p-2 shadow-soft border flex items-center gap-3 transition-colors cursor-pointer ${editingItemId === item.id ? 'border-terracotta bg-orange-50/10 ring-1 ring-terracotta' : 'border-stone-100'}`}
                         >
-                            {item.image ? (
-                                <div className="absolute inset-0 z-0">
-                                    <img src={item.image} alt={item.name} className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                                </div>
-                            ) : (
-                                <div className={`absolute inset-0 ${styles.light} opacity-30`}></div>
-                            )}
+                             <div className="w-16 h-16 rounded-xl overflow-hidden bg-stone-50 flex-shrink-0 border border-stone-100 relative">
+                                {item.image ? (
+                                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-ocean/5">
+                                        <ShoppingBagIcon className="w-5 h-5 text-ocean/30" />
+                                    </div>
+                                )}
+                             </div>
 
-                            <div className="relative z-10 flex-1 flex flex-col justify-end">
-                                <h3 className={`font-bold text-sm leading-tight mb-1 ${item.image ? 'text-white' : 'text-sumi'}`}>{item.name}</h3>
-                                {item.note && <p className={`text-[10px] font-medium truncate ${item.image ? 'text-stone-300' : 'text-stone-400'}`}>{item.note}</p>}
-                            </div>
+                             <div className="flex-1 min-w-0 py-1">
+                                <h3 className="font-extrabold text-sumi text-sm truncate">{item.name}</h3>
+                                {item.note && <p className="text-xs text-stone-400 mt-0.5 truncate">{item.note.replace(/\n/g, ' ')}</p>}
+                             </div>
 
-                             <DeleteButton 
-                                onDelete={() => deleteItem(item.id)} 
-                                className="absolute top-2 right-2 z-20 bg-black/20 text-white hover:bg-red-500 p-1.5 rounded-full backdrop-blur-sm"
-                                iconSize="w-3 h-3"
-                            />
+                             <div className="flex flex-col gap-1 pr-1">
+                                <button onClick={(e) => { e.stopPropagation(); startEditItem(item); }} className={`p-2 rounded-full hover:bg-stone-100 ${editingItemId === item.id ? 'bg-terracotta text-white hover:bg-terracotta' : 'bg-stone-50 text-stone-400'}`}>
+                                    <EditIcon className="w-3.5 h-3.5" />
+                                </button>
+                                <DeleteButton onDelete={() => deleteItem(item.id)} className="p-2 bg-stone-50 text-stone-400 rounded-full hover:bg-stone-100" iconSize="w-3.5 h-3.5" />
+                             </div>
                         </div>
                     ))}
-                    
-                    {/* Add Item Card */}
-                    <div className="bg-stone-50 border border-stone-100 border-dashed rounded-2xl p-4 flex flex-col gap-3 justify-center">
-                        <div className="flex gap-2">
-                             <div className="relative">
-                                <button 
-                                    type="button" 
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${newItemImage ? 'border-ocean bg-ocean/10' : 'border-stone-200 bg-white text-stone-300'}`}
-                                >
-                                    {newItemImage ? <img src={newItemImage} className="w-full h-full rounded-xl object-cover" /> : <CameraIcon className="w-4 h-4" />}
-                                </button>
-                                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
-                            </div>
-                            <input 
-                                type="text"
-                                placeholder="品名..."
-                                value={newItemName}
-                                onChange={e => setNewItemName(e.target.value)}
-                                className="flex-1 bg-white px-3 rounded-xl text-xs outline-none border-stone-200 focus:ring-1 focus:ring-stone-300"
-                            />
+                </div>
+                
+                {/* Add/Edit Item Form (List Style) */}
+                <div ref={itemFormRef} className={`bg-stone-50 border border-stone-100 border-dashed rounded-2xl p-4 flex flex-col gap-3 scroll-mt-28 transition-colors ${editingItemId ? 'bg-orange-50/50 border-orange-100' : ''}`}>
+                     <p className={`text-xs font-bold ${editingItemId ? 'text-terracotta' : 'text-stone-400'}`}>
+                        {editingItemId ? `正在編輯：${newItemName}` : '新增商品'}
+                    </p>
+                    <div className="flex gap-3">
+                            <div className="relative flex-shrink-0">
+                            <button 
+                                type="button" 
+                                onClick={() => fileInputRef.current?.click()}
+                                className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all ${newItemImage ? 'border-ocean bg-ocean/10' : 'border-stone-200 bg-white text-stone-300'}`}
+                            >
+                                {newItemImage ? <img src={newItemImage} className="w-full h-full rounded-xl object-cover" /> : <CameraIcon className="w-5 h-5" />}
+                            </button>
+                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
                         </div>
                         <input 
                             type="text"
-                            placeholder="價格/備註..."
-                            value={newItemNote}
-                            onChange={e => setNewItemNote(e.target.value)}
-                            className="w-full bg-white px-3 py-2 rounded-xl text-xs outline-none border-stone-200 focus:ring-1 focus:ring-stone-300"
+                            placeholder="品名..."
+                            value={newItemName}
+                            onChange={e => setNewItemName(e.target.value)}
+                            className="flex-1 bg-white px-3 rounded-xl text-sm outline-none shadow-sm"
                         />
-                        <button onClick={handleAddItem} disabled={!newItemName} className="bg-sumi text-white w-full py-2 rounded-xl text-xs font-bold disabled:opacity-50">
-                            新增
+                    </div>
+                    <textarea 
+                        placeholder="商品介紹"
+                        value={newItemNote}
+                        onChange={e => setNewItemNote(e.target.value)}
+                        className="w-full bg-white px-3 py-2 rounded-xl text-xs outline-none shadow-sm resize-none leading-relaxed"
+                        rows={3}
+                    />
+                    <div className="flex gap-2">
+                        {editingItemId && <button onClick={() => { setEditingItemId(null); setNewItemName(''); setNewItemNote(''); setNewItemImage(undefined); }} className="flex-1 bg-stone-200 text-stone-500 py-2 rounded-xl text-xs font-bold">取消</button>}
+                        <button onClick={handleAddItem} disabled={!newItemName} className="flex-1 bg-sumi text-white py-3 rounded-xl text-xs font-bold disabled:opacity-50 transition-all active:scale-[0.98]">
+                            {editingItemId ? '更新商品' : '新增'}
                         </button>
                     </div>
                 </div>
@@ -1216,10 +1301,15 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                             )}
                             <div className="p-6">
                                 <div className="flex justify-between items-start mb-4">
-                                     <h3 className="text-2xl font-bold text-sumi">{viewingItem.name}</h3>
-                                     <DeleteButton onDelete={() => deleteItem(viewingItem.id)} className="bg-stone-100 text-stone-400 p-2 rounded-full" />
+                                     <h3 className="text-2xl font-black text-sumi">{viewingItem.name}</h3>
+                                     <div className="flex gap-2">
+                                         <button onClick={() => { startEditItem(viewingItem); setViewingItem(null); }} className="bg-stone-100 text-stone-400 p-2 rounded-full">
+                                            <EditIcon className="w-4 h-4" />
+                                         </button>
+                                         <DeleteButton onDelete={() => deleteItem(viewingItem.id)} className="bg-stone-100 text-stone-400 p-2 rounded-full" />
+                                     </div>
                                 </div>
-                                <div className="bg-stone-50 p-4 rounded-xl text-stone-600 text-sm leading-relaxed mb-6">
+                                <div className="bg-stone-50 p-4 rounded-xl text-stone-600 text-sm leading-relaxed mb-6 whitespace-pre-line">
                                     {viewingItem.note || "無備註"}
                                 </div>
                                 <button onClick={() => setViewingItem(null)} className="w-full bg-sumi text-white font-bold py-4 rounded-2xl">關閉</button>
@@ -1233,77 +1323,6 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
 
     return (
         <div className="pb-24 space-y-10 px-7">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                     <div className="w-8 h-8 rounded-full bg-coral/10 flex items-center justify-center">
-                        <ShoppingBagIcon className="w-4 h-4 text-coral" />
-                    </div>
-                    {isEditingTitle ? (
-                        <input 
-                            type="text" 
-                            value={tripData.shoppingTitle}
-                            onChange={(e) => setTripData({...tripData, shoppingTitle: e.target.value})}
-                            onBlur={() => setIsEditingTitle(false)}
-                            autoFocus
-                            className="text-lg font-bold text-sumi bg-transparent outline-none border-b border-coral w-48"
-                        />
-                    ) : (
-                        <h2 onClick={() => setIsEditingTitle(true)} className="text-lg font-bold text-sumi flex items-center gap-2">
-                            {tripData.shoppingTitle}
-                            <EditIcon className="w-4 h-4 text-stone-200" />
-                        </h2>
-                    )}
-                </div>
-                <button onClick={() => setIsCreatingCategory(!isCreatingCategory)} className="text-xs font-bold text-white bg-sumi px-4 py-2 rounded-full hover:bg-black transition-colors">
-                    {isCreatingCategory ? '取消' : '建立清單'}
-                </button>
-            </div>
-
-            {/* Category Creation Form */}
-            {isCreatingCategory && (
-                <form onSubmit={handleCreateCategory} className="bg-white p-4 rounded-2xl shadow-soft border border-stone-100 mb-6 animate-[fadeIn_0.2s_ease-out]">
-                    <div className="flex gap-3 mb-3">
-                        <input 
-                            type="text" 
-                            value={newCatEmoji}
-                            onChange={e => setNewCatEmoji(e.target.value)}
-                            className="w-12 text-center bg-stone-50 rounded-xl text-xl outline-none border border-stone-200 focus:border-coral"
-                            maxLength={2}
-                        />
-                        <input 
-                            type="text" 
-                            placeholder="清單名稱 (例: 藥妝)"
-                            value={newCatName}
-                            onChange={e => setNewCatName(e.target.value)}
-                            className="flex-1 bg-stone-50 rounded-xl px-4 text-sm outline-none border border-stone-200 focus:border-coral"
-                            autoFocus
-                        />
-                    </div>
-                    <button type="submit" className="w-full bg-coral text-white font-bold py-3 rounded-xl text-xs">確認建立</button>
-                </form>
-            )}
-
-            {/* Category Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-12">
-                {tripData.shoppingCategories.map(cat => {
-                    const styles = getShoppingColor(cat.color);
-                    const count = tripData.shoppingList.filter(i => i.categoryId === cat.id).length;
-                    
-                    return (
-                        <button 
-                            key={cat.id}
-                            onClick={() => setActiveCategoryId(cat.id)}
-                            className={`relative overflow-hidden rounded-2xl p-5 text-left transition-all hover:scale-[1.02] active:scale-[0.98] border shadow-sm ${styles.light} ${styles.border} backdrop-blur-md`}
-                        >
-                            <div className="text-3xl mb-3">{cat.icon}</div>
-                            <h3 className={`font-bold text-sm mb-1 ${styles.text}`}>{cat.name}</h3>
-                            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{count} ITEMS</p>
-                        </button>
-                    )
-                })}
-            </div>
-
             {/* Shopping Locations */}
             <section>
                  <div className="flex items-center gap-3 mb-6 mt-0">
@@ -1317,10 +1336,10 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                             onChange={(e) => setTripData({...tripData, shoppingLocationTitle: e.target.value})}
                             onBlur={() => setIsEditingLocTitle(false)}
                             autoFocus
-                            className="text-lg font-bold text-sumi bg-transparent outline-none border-b border-stone-300 w-48"
+                            className="text-lg font-black text-sumi bg-transparent outline-none border-b border-stone-300 w-48"
                         />
                     ) : (
-                         <h2 onClick={() => setIsEditingLocTitle(true)} className="text-lg font-bold text-sumi flex items-center gap-2">
+                         <h2 onClick={() => setIsEditingLocTitle(true)} className="text-lg font-black text-sumi flex items-center gap-2">
                             {tripData.shoppingLocationTitle}
                             <EditIcon className="w-4 h-4 text-stone-200" />
                         </h2>
@@ -1331,7 +1350,7 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                     {tripData.shoppingLocations.map(loc => (
                         <div key={loc.id} className={`bg-white p-4 rounded-2xl border shadow-soft flex justify-between items-start transition-colors ${editingLocId === loc.id ? 'border-terracotta ring-1 ring-terracotta bg-orange-50/10' : 'border-stone-100'}`}>
                              <div className="flex-1 pr-4">
-                                 <h4 className="font-bold text-sumi text-sm">{loc.name}</h4>
+                                 <h4 className="font-extrabold text-sumi text-sm">{loc.name}</h4>
                                  <p className="text-xs text-stone-400 mt-1">{loc.address}</p>
                                  {loc.note && <p className="text-xs text-stone-500 mt-2 bg-stone-50 p-2 rounded-lg">{loc.note}</p>}
                              </div>
@@ -1361,20 +1380,20 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                             placeholder="地點名稱"
                             value={newLocName}
                             onChange={e => setNewLocName(e.target.value)}
-                            className="w-full bg-white px-4 py-3 rounded-xl text-xs outline-none focus:ring-1 focus:ring-stone-200"
+                            className="w-full bg-white px-4 py-3 rounded-xl text-xs outline-none shadow-sm"
                         />
                         <input 
                             type="text" 
                             placeholder="地址/區域 (用於導航)"
                             value={newLocAddress}
                             onChange={e => setNewLocAddress(e.target.value)}
-                            className="w-full bg-white px-4 py-3 rounded-xl text-xs outline-none focus:ring-1 focus:ring-stone-200"
+                            className="w-full bg-white px-4 py-3 rounded-xl text-xs outline-none shadow-sm"
                         />
                         <textarea 
                             placeholder="備註/介紹 (選填)"
                             value={newLocNote}
                             onChange={e => setNewLocNote(e.target.value)}
-                            className="w-full bg-white px-4 py-3 rounded-xl text-xs outline-none focus:ring-1 focus:ring-stone-200 resize-none"
+                            className="w-full bg-white px-4 py-3 rounded-xl text-xs outline-none shadow-sm resize-none"
                             rows={2}
                         />
                         <div className="flex gap-2">
@@ -1386,6 +1405,88 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                     </div>
                 </form>
             </section>
+            
+            {/* Shopping Lists Categories */}
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                     <div className="w-8 h-8 rounded-full bg-coral/10 flex items-center justify-center">
+                        <ShoppingBagIcon className="w-4 h-4 text-coral" />
+                    </div>
+                    {isEditingTitle ? (
+                        <input 
+                            type="text" 
+                            value={tripData.shoppingTitle}
+                            onChange={(e) => setTripData({...tripData, shoppingTitle: e.target.value})}
+                            onBlur={() => setIsEditingTitle(false)}
+                            autoFocus
+                            className="text-lg font-black text-sumi bg-transparent outline-none border-b border-coral w-48"
+                        />
+                    ) : (
+                        <h2 onClick={() => setIsEditingTitle(true)} className="text-lg font-black text-sumi flex items-center gap-2">
+                            {tripData.shoppingTitle}
+                            <EditIcon className="w-4 h-4 text-stone-200" />
+                        </h2>
+                    )}
+                </div>
+                <button onClick={() => { setIsCreatingCategory(!isCreatingCategory); setIsEditingCategory(null); setNewCatName(''); setNewCatEmoji('😊'); }} className="text-xs font-bold text-white bg-sumi px-4 py-2 rounded-full hover:bg-black transition-colors">
+                    {isCreatingCategory && !isEditingCategory ? '取消' : '建立清單'}
+                </button>
+            </div>
+
+            {/* Category Creation Form */}
+            {isCreatingCategory && (
+                <form onSubmit={handleCreateOrEditCategory} className="bg-stone-50 border border-stone-100 border-dashed p-4 rounded-2xl mb-6 animate-[fadeIn_0.2s_ease-out]">
+                    <p className={`text-xs font-bold mb-3 ${isEditingCategory ? 'text-terracotta' : 'text-stone-400'}`}>{isEditingCategory ? '編輯分類' : '建立新分類'}</p>
+                    <div className="flex gap-3 mb-3">
+                        <input 
+                            type="text" 
+                            value={newCatEmoji}
+                            onChange={e => setNewCatEmoji(e.target.value)}
+                            className="w-14 text-center bg-white rounded-xl text-xl outline-none shadow-sm"
+                            maxLength={2}
+                        />
+                        <input 
+                            type="text" 
+                            placeholder="清單名稱 (例: 藥妝)"
+                            value={newCatName}
+                            onChange={e => setNewCatName(e.target.value)}
+                            className="flex-1 bg-white px-4 py-3 rounded-xl text-sm outline-none shadow-sm"
+                            autoFocus
+                        />
+                    </div>
+                    <div className="flex gap-2">
+                         {isEditingCategory && <button type="button" onClick={() => { setIsCreatingCategory(false); setIsEditingCategory(null); setNewCatName(''); setNewCatEmoji('😊'); }} className="flex-1 bg-stone-200 text-stone-500 font-bold py-3 rounded-xl text-xs">取消</button>}
+                        <button type="submit" className="flex-1 bg-coral text-white font-bold py-3 rounded-xl text-xs shadow-md transition-transform active:scale-[0.98]">{isEditingCategory ? '更新' : '確認建立'}</button>
+                    </div>
+                </form>
+            )}
+
+            {/* Category Grid */}
+            <div className="grid grid-cols-2 gap-3 mb-12">
+                {tripData.shoppingCategories.map(cat => {
+                    const styles = getShoppingColor(cat.color);
+                    const count = tripData.shoppingList.filter(i => i.categoryId === cat.id).length;
+                    
+                    return (
+                        <div key={cat.id} className="relative group">
+                             <button 
+                                onClick={() => setActiveCategoryId(cat.id)}
+                                className={`w-full overflow-hidden rounded-2xl p-5 text-left transition-all hover:scale-[1.02] active:scale-[0.98] border shadow-sm ${styles.light} ${styles.border} backdrop-blur-md`}
+                            >
+                                <div className="text-3xl mb-3">{cat.icon}</div>
+                                <h3 className={`font-black text-sm mb-1 ${styles.text}`}>{cat.name}</h3>
+                                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{count} ITEMS</p>
+                            </button>
+                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={(e) => startEditCategory(cat, e)} className="p-1.5 bg-white/50 hover:bg-white rounded-full text-stone-400 hover:text-stone-600 backdrop-blur-sm">
+                                    <EditIcon className="w-3.5 h-3.5" />
+                                </button>
+                                <DeleteButton onDelete={() => deleteCategory(cat.id)} className="p-1.5 bg-rose-50/80 hover:bg-rose-100 rounded-full text-rose-500 backdrop-blur-sm" iconSize="w-3.5 h-3.5" />
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
         </div>
     );
 };

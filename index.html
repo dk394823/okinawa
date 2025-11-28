@@ -16,6 +16,11 @@
     <link rel="icon" type="image/png" href="/icon.png?v=2" />
     <link rel="apple-touch-icon" href="/icon.png?v=2" />
 
+    <!-- Google Fonts: Noto Sans TC for heavy weights -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -35,7 +40,7 @@
               'coral': '#ff8a80'
             },
             fontFamily: {
-              sans: ['Helvetica Neue', 'Arial', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', 'sans-serif'],
+              sans: ['"Noto Sans TC"', '"PingFang TC"', '"Microsoft JhengHei"', 'sans-serif'],
             },
             boxShadow: {
               'soft': '0 4px 20px -4px rgba(0, 0, 0, 0.05)',
@@ -50,6 +55,7 @@
         color: #2d2d2d;
         -webkit-font-smoothing: antialiased;
         overscroll-behavior-y: none;
+        font-family: "Noto Sans TC", sans-serif;
       }
       ::selection {
         background: #2c7a7b;

@@ -382,7 +382,7 @@ export default function App() {
         <div className="flex justify-between items-start mb-0">
             <div className="flex-1">
                 <div className="flex justify-between items-center mb-1">
-                    <p className="text-ocean text-[10px] font-bold tracking-[0.25em] uppercase">Okinawa Trip</p>
+                    <p className="text-ocean text-[10px] font-black tracking-[0.25em] uppercase">2026 OKINAWA TRIP</p>
                     <button onClick={() => setIsSyncModalOpen(true)} className="flex items-center gap-1 bg-ocean/5 px-2 py-1 rounded-full hover:bg-ocean/10 transition-colors">
                         <CloudIcon className="w-3 h-3 text-ocean" />
                         <span className="text-[9px] font-bold text-ocean">雲端同步</span>
@@ -396,10 +396,10 @@ export default function App() {
                         onChange={(e) => setTripData({...tripData, appTitle: e.target.value})}
                         onBlur={() => setIsEditingTitle(false)}
                         autoFocus
-                        className="text-3xl font-bold text-sumi w-full bg-transparent outline-none border-b border-ocean"
+                        className="text-3xl font-black text-sumi w-full bg-transparent outline-none border-b border-ocean"
                     />
                 ) : (
-                    <h1 onClick={() => setIsEditingTitle(true)} className="text-3xl font-bold text-sumi tracking-tight leading-none cursor-pointer flex items-center gap-2 group">
+                    <h1 onClick={() => setIsEditingTitle(true)} className="text-3xl font-black text-sumi tracking-tight leading-none cursor-pointer flex items-center gap-2 group">
                         {tripData.appTitle}
                         <EditIcon className="w-5 h-5 text-stone-200 group-hover:text-ocean transition-colors" />
                     </h1>
@@ -438,7 +438,7 @@ export default function App() {
                     }`}
                 >
                     <span className={`text-[10px] font-bold tracking-widest uppercase mb-0.5 ${isActive ? 'opacity-90' : 'opacity-60'}`}>{d.weekday}</span>
-                    <span className="text-xl font-bold">{d.date.split('-')[2]}</span>
+                    <span className="text-xl font-black">{d.date.split('-')[2]}</span>
                     {hasItems && !isActive && <div className="w-1 h-1 rounded-full bg-terracotta mt-1" />}
                 </button>
                 );
@@ -453,7 +453,7 @@ export default function App() {
              <div className="px-7 pt-0 animate-[fadeIn_0.3s_ease-out]">
                 {/* Day Header */}
                 <div className="flex items-center justify-between mb-8 px-1">
-                    <h2 className="text-xl font-bold text-sumi tracking-tight">
+                    <h2 className="text-xl font-black text-sumi tracking-tight">
                         {currentDay.dayLabel} 
                     </h2>
                 </div>
