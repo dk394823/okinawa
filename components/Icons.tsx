@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 
 export const MapPinIcon = ({ className }: { className?: string }) => (
@@ -119,8 +120,8 @@ export const WalletIcon = ({ className }: { className?: string }) => (
 export const DollarIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <circle cx="12" cy="12" r="10" />
-      <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
       <path d="M12 18V6" />
+      <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
     </svg>
 );
   
@@ -290,5 +291,20 @@ export const ImageOffIcon = ({ className }: { className?: string }) => (
     <path d="M10.41 6.26A2 2 0 0 0 12 4h1.9a2 2 0 0 1 2 1.9V7h2a2 2 0 0 1 2 2v7.17" />
     <path d="M14 13.5V20H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1.6" />
     <circle cx="12" cy="13" r="3" />
+  </svg>
+);
+
+export const CreditCardIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect width="20" height="14" x="2" y="5" rx="2" />
+    <line x1="2" x2="22" y1="10" y2="10" />
+  </svg>
+);
+
+export const BanknoteIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect width="20" height="12" x="2" y="6" rx="2" />
+    <circle cx="12" cy="12" r="2" />
+    <path d="M6 12h.01M18 12h.01" />
   </svg>
 );

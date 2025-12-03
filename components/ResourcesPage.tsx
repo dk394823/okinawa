@@ -1,7 +1,8 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { TripData, FlightInfo, ItineraryState, ItemType, DaySchedule, ItineraryItem, ShoppingCategory, ShoppingColorType, ShoppingItem, Expense, ShoppingLocation, Contact } from '../types';
-import { PlaneIcon, WalletIcon, PhoneIcon, BedIcon, ShoppingBagIcon, PlusIcon, CheckIcon, CalculatorIcon, ExchangeIcon, EditIcon, ZapIcon, ArrowLeftIcon, TrashIcon, PhotoIcon, UsersIcon, PaperPlaneIcon, MapPinIcon, NavigationIcon, CameraIcon, SimplePlaneIcon, PlaneTakeoffIcon, GlobeIcon, GamepadIcon, DollarIcon } from './Icons';
+import { PlaneIcon, WalletIcon, PhoneIcon, BedIcon, ShoppingBagIcon, PlusIcon, CheckIcon, CalculatorIcon, ExchangeIcon, EditIcon, ZapIcon, ArrowLeftIcon, TrashIcon, PhotoIcon, UsersIcon, PaperPlaneIcon, MapPinIcon, NavigationIcon, CameraIcon, SimplePlaneIcon, PlaneTakeoffIcon, GlobeIcon, GamepadIcon, DollarIcon, CreditCardIcon, BanknoteIcon } from './Icons';
 
 interface ResourcesPageProps {
   tripData: TripData;
@@ -599,6 +600,11 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
     const [calcJpy, setCalcJpy] = useState('');
     const [expenseType, setExpenseType] = useState<'SHARED' | 'PERSONAL'>('SHARED');
     
+    // New fields
+    const [newExpenseDate, setNewExpenseDate] = useState(new Date().toISOString().slice(0,10));
+    const [newExpenseTime, setNewExpenseTime] = useState(new Date().toTimeString().slice(0,5));
+    const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD'>('CASH');
+
     const [selectedBeneficiaries, setSelectedBeneficiaries] = useState<string[]>([]);
     const [viewMode, setViewMode] = useState<'SHARED' | 'PERSONAL'>('SHARED');
     const [selectedContact, setSelectedContact] = useState<string>('');
@@ -624,6 +630,9 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
         if (expenseType === 'PERSONAL') beneficiaries = [payer];
         if(!amount || !desc || !payer || beneficiaries.length === 0) return;
         
+        // Construct ISO string for sorting
+        const dateTimeStr = `${newExpenseDate}T${newExpenseTime}:00`;
+
         setTripData({
             ...tripData,
             expenses: [...tripData.expenses, { 
@@ -631,12 +640,19 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
                 amount: parseInt(amount), 
                 title: desc, 
                 payer, 
-                date: new Date().toISOString().split('T')[0],
-                beneficiaries: beneficiaries
+                date: newExpenseDate,
+                timestamp: dateTimeStr,
+                beneficiaries: beneficiaries,
+                paymentMethod: paymentMethod,
+                exchangeRate: tripData.exchangeRate // Snapshot current rate
             }]
         });
         setAmount('');
         setDesc('');
+        // Reset time to current
+        const now = new Date();
+        setNewExpenseDate(now.toISOString().slice(0,10));
+        setNewExpenseTime(now.toTimeString().slice(0,5));
     };
 
     const toggleBeneficiary = (name: string) => {
@@ -671,7 +687,46 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
         return settlement;
     };
 
+    // Simplify Debt Logic (Greedy Algorithm)
+    const calculateSimplifiedDebts = (balances: Record<string, { balance: number }>) => {
+        let debtors: { name: string, amount: number }[] = [];
+        let creditors: { name: string, amount: number }[] = [];
+
+        Object.entries(balances).forEach(([name, data]) => {
+            const bal = Math.round(data.balance); // Use integer rounding to avoid float issues
+            if (bal < -1) debtors.push({ name, amount: -bal });
+            else if (bal > 1) creditors.push({ name, amount: bal });
+        });
+
+        debtors.sort((a, b) => b.amount - a.amount);
+        creditors.sort((a, b) => b.amount - a.amount);
+
+        const transactions: { from: string, to: string, amount: number }[] = [];
+
+        let i = 0; // debtors index
+        let j = 0; // creditors index
+
+        while (i < debtors.length && j < creditors.length) {
+            const debtor = debtors[i];
+            const creditor = creditors[j];
+            const amount = Math.min(debtor.amount, creditor.amount);
+
+            if (amount > 0) {
+                transactions.push({ from: debtor.name, to: creditor.name, amount });
+            }
+
+            debtor.amount -= amount;
+            creditor.amount -= amount;
+
+            if (debtor.amount < 1) i++;
+            if (creditor.amount < 1) j++;
+        }
+
+        return transactions;
+    };
+
     const settlementData = calculateSettlement();
+    const suggestedRepayments = calculateSimplifiedDebts(settlementData);
     const totalGroupSpend = tripData.expenses.filter(ex => !isPersonalExpense(ex)).reduce((acc, curr) => acc + curr.amount, 0);
 
     const filteredExpenses = tripData.expenses.filter(ex => {
@@ -683,7 +738,12 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
              return ex.payer === selectedContact || benes.includes(selectedContact);
         }
         return true;
-    }).reverse();
+    }).sort((a, b) => {
+        // Sort by timestamp if available, else date
+        const timeA = a.timestamp || a.date;
+        const timeB = b.timestamp || b.date;
+        return timeB.localeCompare(timeA); // Descending order
+    });
 
     return (
         <div className="space-y-8 pb-20 px-7">
@@ -759,29 +819,52 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
                         {contactNames.length === 0 ? (
                             <p className="text-center text-xs text-stone-300 py-2">請先新增聯絡人</p>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-xs text-right whitespace-nowrap">
-                                    <thead>
-                                        <tr className="text-stone-400 border-b border-stone-50">
-                                            <th className="pb-3 text-left font-bold pl-2">成員</th>
-                                            <th className="pb-3 font-normal">先墊</th>
-                                            <th className="pb-3 font-normal">應付</th>
-                                            <th className="pb-3 font-bold text-sumi pr-2">結餘</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {Object.entries(settlementData).map(([name, data]) => (
-                                            <tr key={name} className="border-b border-stone-50 last:border-0 hover:bg-stone-50 transition-colors">
-                                                <td className="py-3 text-left font-bold text-sumi pl-2">{name}</td>
-                                                <td className="py-3 text-stone-400">¥{data.paid.toLocaleString()}</td>
-                                                <td className="py-3 text-stone-400">¥{Math.round(data.share).toLocaleString()}</td>
-                                                <td className={`py-3 font-mono font-bold pr-2 ${data.balance >= 0 ? 'text-wasabi' : 'text-coral'}`}>
-                                                    {data.balance > 0 ? '+' : ''}{Math.round(data.balance).toLocaleString()}
-                                                </td>
+                            <div className="space-y-6">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-xs text-right whitespace-nowrap">
+                                        <thead>
+                                            <tr className="text-stone-400 border-b border-stone-50">
+                                                <th className="pb-3 text-left font-bold pl-2">成員</th>
+                                                <th className="pb-3 font-normal">先墊</th>
+                                                <th className="pb-3 font-normal">應付</th>
+                                                <th className="pb-3 font-bold text-sumi pr-2">結餘</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {Object.entries(settlementData).map(([name, data]) => (
+                                                <tr key={name} className="border-b border-stone-50 last:border-0 hover:bg-stone-50 transition-colors">
+                                                    <td className="py-3 text-left font-bold text-sumi pl-2">{name}</td>
+                                                    <td className="py-3 text-stone-400">¥{data.paid.toLocaleString()}</td>
+                                                    <td className="py-3 text-stone-400">¥{Math.round(data.share).toLocaleString()}</td>
+                                                    <td className={`py-3 font-mono font-bold pr-2 ${data.balance >= 0 ? 'text-wasabi' : 'text-coral'}`}>
+                                                        {data.balance > 0 ? '+' : ''}{Math.round(data.balance).toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Suggested Repayments */}
+                                <div>
+                                    <h3 className="text-xs font-black text-stone-400 uppercase tracking-widest mb-3 border-t border-stone-100 pt-4">最佳還款建議</h3>
+                                    <div className="space-y-2">
+                                        {suggestedRepayments.length === 0 ? (
+                                            <p className="text-xs text-stone-300 text-center italic py-2">帳目已平，無需還款</p>
+                                        ) : (
+                                            suggestedRepayments.map((item, idx) => (
+                                                <div key={idx} className="bg-stone-50 p-3 rounded-xl flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-sumi text-xs">{item.from}</span>
+                                                        <ArrowLeftIcon className="w-3 h-3 text-stone-300 rotate-180" />
+                                                        <span className="font-bold text-sumi text-xs">{item.to}</span>
+                                                    </div>
+                                                    <span className="font-mono font-black text-wasabi text-sm">¥{item.amount.toLocaleString()}</span>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -813,6 +896,47 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
                         >
                             私帳
                         </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div>
+                            <label className="text-[10px] font-bold text-stone-400 uppercase mb-2 block tracking-wider">日期</label>
+                            <input 
+                                type="date"
+                                value={newExpenseDate}
+                                onChange={e => setNewExpenseDate(e.target.value)}
+                                className="w-full bg-stone-50 rounded-xl px-3 py-3 text-xs outline-none focus:ring-1 focus:ring-wasabi transition-all"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-stone-400 uppercase mb-2 block tracking-wider">時間</label>
+                            <input 
+                                type="time"
+                                value={newExpenseTime}
+                                onChange={e => setNewExpenseTime(e.target.value)}
+                                className="w-full bg-stone-50 rounded-xl px-3 py-3 text-xs outline-none focus:ring-1 focus:ring-wasabi transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="mb-4">
+                        <label className="text-[10px] font-bold text-stone-400 uppercase mb-2 block tracking-wider">付款方式</label>
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setPaymentMethod('CASH')}
+                                className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold border transition-all ${paymentMethod === 'CASH' ? 'bg-wasabi/10 border-wasabi text-wasabi' : 'bg-stone-50 border-transparent text-stone-400'}`}
+                            >
+                                <BanknoteIcon className="w-4 h-4" /> 現金
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPaymentMethod('CARD')}
+                                className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold border transition-all ${paymentMethod === 'CARD' ? 'bg-ocean/10 border-ocean text-ocean' : 'bg-stone-50 border-transparent text-stone-400'}`}
+                            >
+                                <CreditCardIcon className="w-4 h-4" /> 信用卡
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex gap-4 mb-5">
@@ -937,6 +1061,7 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
                             const benes = (ex.beneficiaries && ex.beneficiaries.length > 0) ? ex.beneficiaries : contactNames;
                             const isAll = benes.length === contactNames.length && contactNames.length > 0;
                             const isPersonal = isPersonalExpense(ex);
+                            const historicalRate = ex.exchangeRate || tripData.exchangeRate;
 
                             return (
                                 <div key={ex.id} className="bg-white p-5 rounded-2xl border border-stone-50 shadow-soft flex flex-col gap-3 relative overflow-hidden group">
@@ -949,12 +1074,26 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
                                                 <span className={`text-[10px] font-bold text-white px-2 py-0.5 rounded ${isPersonal ? 'bg-stone-400' : 'bg-stone-600'}`}>
                                                     {isPersonal ? `${ex.payer}` : `${ex.payer} 付`}
                                                 </span>
-                                                <span className="text-[10px] font-mono text-stone-300">{ex.date.slice(5)}</span>
+                                                <div className="flex items-center gap-1 text-[10px] font-mono text-stone-300">
+                                                    {ex.timestamp ? (
+                                                        <>
+                                                            <span>{ex.timestamp.slice(5, 10)}</span>
+                                                            <span>{ex.timestamp.slice(11, 16)}</span>
+                                                        </>
+                                                    ) : (
+                                                        <span>{ex.date.slice(5)}</span>
+                                                    )}
+                                                </div>
+                                                {ex.paymentMethod && (
+                                                    <span className="text-[10px] text-stone-300 ml-1">
+                                                        {ex.paymentMethod === 'CARD' ? <CreditCardIcon className="w-3 h-3" /> : <BanknoteIcon className="w-3 h-3" />}
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="text-right">
                                             <p className="font-mono font-bold text-lg text-sumi">¥{ex.amount.toLocaleString()}</p>
-                                            <p className="text-[10px] text-stone-400 font-bold">≈ NT${Math.round(ex.amount * tripData.exchangeRate).toLocaleString()}</p>
+                                            <p className="text-[10px] text-stone-400 font-bold">≈ NT${Math.round(ex.amount * historicalRate).toLocaleString()}</p>
                                         </div>
                                     </div>
                                     
@@ -1380,7 +1519,7 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                             placeholder="地點名稱"
                             value={newLocName}
                             onChange={e => setNewLocName(e.target.value)}
-                            className="w-full bg-white px-4 py-3 rounded-xl text-xs outline-none shadow-sm"
+                            className="w-full bg-white bg-white px-4 py-3 rounded-xl text-xs outline-none shadow-sm"
                         />
                         <input 
                             type="text" 

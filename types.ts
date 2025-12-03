@@ -64,6 +64,10 @@ export interface Expense {
   payer: string; // Name of person who paid
   beneficiaries: string[]; // Names of people who split this expense
   date: string;
+  // New fields
+  paymentMethod?: 'CASH' | 'CARD';
+  timestamp?: string; // ISO string for sorting
+  exchangeRate?: number; // Historical rate snapshot
 }
 
 export type ShoppingColorType = 'ocean' | 'terracotta' | 'wasabi' | 'sakura' | 'slate' | 'coral';
