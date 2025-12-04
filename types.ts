@@ -12,6 +12,7 @@ export interface ItineraryItem {
   time: string;
   title: string;
   location: string;
+  address?: string; // New field for navigation
   type: ItemType;
   notes?: string;
   weatherForecast?: string;
@@ -75,9 +76,12 @@ export type ShoppingColorType = 'ocean' | 'terracotta' | 'wasabi' | 'sakura' | '
 export interface ShoppingCategory {
   id: string;
   name: string;
-  icon: string; // Emoji character
+  icon: string; // Icon identifier
   color: ShoppingColorType;
+  customImage?: string; // Base64 string for custom uploaded icon
 }
+
+export type ConvenienceStoreType = 'SEVEN' | 'FAMILY' | 'LAWSON';
 
 export interface ShoppingItem {
   id: string;
@@ -86,6 +90,7 @@ export interface ShoppingItem {
   categoryId: string;
   isBought: boolean;
   image?: string; // Base64 string for thumbnail
+  targetStores?: ConvenienceStoreType[]; // Which stores sell this
 }
 
 export interface ShoppingLocation {

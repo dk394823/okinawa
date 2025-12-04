@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 
 export const MapPinIcon = ({ className }: { className?: string }) => (
@@ -306,5 +305,176 @@ export const BanknoteIcon = ({ className }: { className?: string }) => (
     <rect width="20" height="12" x="2" y="6" rx="2" />
     <circle cx="12" cy="12" r="2" />
     <path d="M6 12h.01M18 12h.01" />
+  </svg>
+);
+
+export const GiftIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect x="3" y="8" width="18" height="4" rx="1" />
+    <path d="M12 8v13" />
+    <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
+    <path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.906 4.906 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" />
+  </svg>
+);
+
+export const HeartIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+  </svg>
+);
+
+export const MaskIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M9 12h.01" />
+    <path d="M15 12h.01" />
+    <path d="M10 16c.5.5 2 1 4 0" />
+    <path d="M2 12c0 5 4 9 10 9s10-4 10-9c0-6-3-9-10-9S2 6 2 12Z" />
+    <path d="M12 3a8 8 0 0 0 0 16 8 8 0 0 0 0-16" opacity="0.5"/>
+  </svg>
+);
+
+export const DropIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" />
+  </svg>
+);
+
+export const ToothIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M19 9c0-3.5-3.5-6-7-6S5 5.5 5 9c0 3 1.5 5 3 6.5s1 4.5 1 4.5h6s-.5-3 1-4.5 3-3.5 3-6.5z" />
+    <path d="M8 9h8" strokeWidth="2" opacity="0.2"/>
+  </svg>
+);
+
+export const MujiIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <text x="50%" y="50%" dy=".35em" textAnchor="middle" fontSize="16" fontWeight="900" fontFamily="Arial, sans-serif" letterSpacing="-1">MUJI</text>
+  </svg>
+);
+
+export const ThreeCoinsIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M10 9a2 2 0 1 1 4 0c0 .5-.5 1-1.5 1 .5 0 1.5.5 1.5 1.5a2 2 0 1 1-4 0" />
+  </svg>
+);
+
+export const StoreIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
+    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+    <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
+    <path d="M2 7h20" />
+  </svg>
+);
+
+export const BoxIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+    <line x1="12" y1="22.08" x2="12" y2="12" />
+  </svg>
+);
+
+export const PillIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z" />
+    <path d="m8.5 8.5 7 7" />
+  </svg>
+);
+
+export const LipstickIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+     <path d="M12 2a2 2 0 0 0-2 2v6h4V4a2 2 0 0 0-2-2Z"/>
+     <rect x="7" y="10" width="10" height="4" rx="1"/>
+     <path d="M7 14h10v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-7Z"/>
+  </svg>
+);
+
+export const EyeDropIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="m12 2-4 5h8z" />
+    <path d="M8 7v4a4 4 0 0 0 8 0V7" />
+    <path d="M12 17a2.5 2.5 0 0 1 0 5 2.5 2.5 0 0 1 0-5Z" />
+  </svg>
+);
+
+export const ToothbrushIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M2 12h10" />
+    <path d="M9 12a3 3 0 0 1 0-6h-3v6" />
+    <path d="M2 12a2 2 0 0 1 0-4h6" />
+    <line x1="13" x2="13" y1="7" y2="11" />
+    <line x1="15" x2="15" y1="7" y2="11" />
+  </svg>
+);
+
+export const TagIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z" />
+    <path d="M7 7h.01" />
+  </svg>
+);
+
+export const CoinsIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="8" cy="8" r="6" />
+    <path d="M18.09 10.37A6 6 0 1 1 10.34 18" />
+    <path d="M7 6h1v4" />
+    <path d="m16.71 13.88.7.71-2.82 2.82" />
+  </svg>
+);
+
+export const ShoppingCartIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="8" cy="21" r="1" />
+    <circle cx="19" cy="21" r="1" />
+    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+  </svg>
+);
+
+export const CrossIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none" className={className}>
+    <path d="M 9 4 h 6 v 5 h 5 v 6 h -5 v 5 h -6 v -5 h -5 v -6 h 5 V 4 Z" />
+  </svg>
+);
+
+export const BearIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="12" cy="14" r="8" />
+    <path d="M5 6a3 3 0 0 1 3 3" />
+    <path d="M19 6a3 3 0 0 0-3 3" />
+    <path d="M9 16v-1" />
+    <path d="M15 16v-1" />
+    <path d="M12 18h.01" />
+  </svg>
+);
+
+export const DuckIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M12 4a4 4 0 0 1 4 4c0 1.5-.5 3-2 4 1.5 2 3 3 5 3a2 2 0 0 1 2 2v1c0 1-1 2-2 2H6c-1 0-2-1-2-2 0-3 3-5 5-5" />
+    <path d="M16 8h4" />
+    <circle cx="14" cy="7" r="1" />
+  </svg>
+);
+
+export const FlowerIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 16.5A4.5 4.5 0 1 1 7.5 12 4.5 4.5 0 1 1 12 7.5a4.5 4.5 0 1 1 4.5 4.5 4.5 4.5 0 1 1-4.5 4.5" />
+    <path d="M12 7.5V3" />
+    <path d="M7.5 12H3" />
+    <path d="M16.5 12H21" />
+    <path d="M12 16.5V21" />
+    <path d="m8 8-2-2" />
+    <path d="m16 8 2-2" />
+    <path d="m8 16-2 2" />
+    <path d="m16 16 2 2" />
+  </svg>
+);
+
+export const StarIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </svg>
 );

@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { DATES, DaySchedule, ItemType, ItineraryState, TripData, ShoppingCategory } from './types';
+import { DATES, DaySchedule, ItemType, ItineraryState, TripData, ShoppingCategory, ItineraryItem } from './types';
 import { ItemCard, AddItemModal } from './components/ItineraryComponents';
 import { ResourcesPage } from './components/ResourcesPage';
 import { PlusIcon, CloudSunIcon, ListIcon, InfoIcon, DollarIcon, ShoppingBagIcon, EditIcon, CloudIcon, DownloadIcon, ShareIcon, FileTextIcon, ImageOffIcon, PhotoIcon } from './components/Icons';
@@ -16,7 +15,17 @@ const INITIAL_ITINERARY: ItineraryState = DATES.reduce((acc, curr) => {
   return acc;
 }, {} as ItineraryState);
 
-const INITIAL_SHOPPING_CATEGORIES: ShoppingCategory[] = [];
+const INITIAL_SHOPPING_CATEGORIES: ShoppingCategory[] = [
+    { id: 'cat-gift', name: '伴手禮', icon: 'gift', color: 'ocean' },
+    { id: 'cat-pill', name: '保健．藥品', icon: 'cross', color: 'ocean' },
+    { id: 'cat-beauty', name: '美妝．保養', icon: 'heart', color: 'ocean' },
+    { id: 'cat-eye', name: '眼藥水．洗眼液', icon: 'drop', color: 'ocean' },
+    { id: 'cat-dental', name: '牙膏', icon: 'tooth', color: 'ocean' },
+    { id: 'cat-muji', name: '無印良品', icon: 'muji', color: 'ocean' },
+    { id: 'cat-3coins', name: '3 coins', icon: '3coins', color: 'ocean' },
+    { id: 'cat-store', name: '超商', icon: 'cart', color: 'ocean' },
+    { id: 'cat-other', name: '其他', icon: 'box', color: 'ocean' },
+];
 
 const INITIAL_TRIP_DATA: TripData = {
     appTitle: "OKA探險隊",
@@ -64,6 +73,7 @@ const SyncModal = ({
         const cleanTripData = { ...tripData };
         cleanTripData.contacts = cleanTripData.contacts.map(c => ({...c, avatar: undefined}));
         cleanTripData.shoppingList = cleanTripData.shoppingList.map(i => ({...i, image: undefined}));
+        cleanTripData.shoppingCategories = cleanTripData.shoppingCategories.map(c => ({...c, customImage: undefined}));
 
         const exportObj = { i: itinerary, d: cleanTripData };
         
@@ -243,6 +253,7 @@ const SyncModal = ({
                         </div>
                     </div>
                 )}
+                <div className="absolute bottom-2 left-4 text-[10px] text-stone-300 font-mono">App Version: v1.1</div>
             </div>
         </div>
     )
@@ -256,6 +267,7 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editingItem, setEditingItem] = useState<ItineraryItem | null>(null);
 
   useEffect(() => {
     const savedItinerary = localStorage.getItem('tabilog-okinawa-2026');
@@ -271,7 +283,10 @@ export default function App() {
     if (savedTripData) {
        try {
         const parsed = JSON.parse(savedTripData);
-        if (!parsed.shoppingCategories) parsed.shoppingCategories = INITIAL_SHOPPING_CATEGORIES;
+        // Ensure shopping categories are initialized if empty
+        if (!parsed.shoppingCategories || parsed.shoppingCategories.length === 0) {
+            parsed.shoppingCategories = INITIAL_SHOPPING_CATEGORIES;
+        }
         if (!parsed.shoppingTitle) parsed.shoppingTitle = "購物清單";
         if (!parsed.shoppingLocations) parsed.shoppingLocations = [];
         if (!parsed.shoppingLocationTitle) parsed.shoppingLocationTitle = "購物地點";
@@ -290,6 +305,18 @@ export default function App() {
     localStorage.setItem('tabilog-okinawa-2026-data-v3', JSON.stringify(tripData));
   }, [tripData]);
 
+  // Generic helper to merge lists based on ID
+  const mergeLists = <T extends { id: string }>(localList: T[], importedList: T[]): T[] => {
+      const mergedMap = new Map<string, T>();
+      // First populate with local items
+      localList.forEach(item => mergedMap.set(item.id, item));
+      // Then overwrite/add imported items (assuming import is newer/source of truth for that item)
+      // BUT, we want to preserve local data if it exists and import doesn't have it.
+      // Strategy: Union. 
+      importedList.forEach(item => mergedMap.set(item.id, item));
+      return Array.from(mergedMap.values());
+  };
+
   const handleImportData = (dataStr: string) => {
       try {
           const binaryStr = atob(dataStr);
@@ -301,31 +328,76 @@ export default function App() {
           const decoded = JSON.parse(decodedStr);
           
           if (decoded.i && decoded.d) {
-              // Smart Merge Logic: Preserve local photos if imported data lacks them
-              const newTripData = decoded.d as TripData;
-              const currentContacts = tripData.contacts;
-              const currentShoppingList = tripData.shoppingList;
+              const importedTripData = decoded.d as TripData;
+              const importedItinerary = decoded.i as ItineraryState;
 
-              // Merge Contacts: preserve avatar if new one is missing but local one exists
-              newTripData.contacts = newTripData.contacts.map(newC => {
-                  const localC = currentContacts.find(c => c.id === newC.id);
-                  if (localC && localC.avatar && !newC.avatar) {
-                      return { ...newC, avatar: localC.avatar };
+              // --- Smart Merge Strategy ---
+              
+              // 1. Merge Contacts (Preserve Local Avatars if missing in import)
+              const mergedContacts = mergeLists(tripData.contacts, importedTripData.contacts).map(contact => {
+                  const localContact = tripData.contacts.find(c => c.id === contact.id);
+                  // If current merged contact (from import) has no avatar, but local one did, restore it
+                  if (localContact && localContact.avatar && !contact.avatar) {
+                      return { ...contact, avatar: localContact.avatar };
                   }
-                  return newC;
+                  return contact;
               });
 
-              // Merge Shopping List: preserve image if new one is missing but local one exists
-              newTripData.shoppingList = newTripData.shoppingList.map(newItem => {
-                  const localItem = currentShoppingList.find(i => i.id === newItem.id);
-                  if (localItem && localItem.image && !newItem.image) {
-                      return { ...newItem, image: localItem.image };
+              // 2. Merge Shopping List (Preserve Local Images)
+              const mergedShoppingList = mergeLists(tripData.shoppingList, importedTripData.shoppingList).map(item => {
+                  const localItem = tripData.shoppingList.find(i => i.id === item.id);
+                  if (localItem && localItem.image && !item.image) {
+                      return { ...item, image: localItem.image };
                   }
-                  return newItem;
+                  return item;
               });
 
-              setItinerary(decoded.i);
-              setTripData(newTripData);
+              // 3. Merge Shopping Locations
+              const mergedLocations = mergeLists(tripData.shoppingLocations, importedTripData.shoppingLocations);
+
+              // 4. Merge Expenses & Sort by Timestamp
+              const mergedExpenses = mergeLists(tripData.expenses, importedTripData.expenses)
+                .sort((a, b) => {
+                    const timeA = a.timestamp || a.date;
+                    const timeB = b.timestamp || b.date;
+                    return timeA.localeCompare(timeB); // Sort ascending for storage? No, UI sorts desc. Let's keep logic simple here.
+                });
+
+              // 5. Merge Shopping Categories (Preserve Local Custom Images)
+              const mergedCategories = mergeLists(tripData.shoppingCategories, importedTripData.shoppingCategories).map(cat => {
+                  const localCat = tripData.shoppingCategories.find(c => c.id === cat.id);
+                  if (localCat && localCat.customImage && !cat.customImage) {
+                      return { ...cat, customImage: localCat.customImage };
+                  }
+                  return cat;
+              });
+
+              // 6. Merge Itinerary Items for each day
+              const mergedItinerary = { ...itinerary };
+              Object.keys(importedItinerary).forEach(date => {
+                  if (mergedItinerary[date]) {
+                      const localItems = mergedItinerary[date].items;
+                      const importedItems = importedItinerary[date].items;
+                      mergedItinerary[date].items = mergeLists(localItems, importedItems)
+                        .sort((a, b) => a.time.localeCompare(b.time));
+                  } else {
+                      mergedItinerary[date] = importedItinerary[date];
+                  }
+              });
+
+              // Construct final data
+              const finalTripData: TripData = {
+                  ...tripData, // Keep local app title/declaration preferences if conflict? Or take import? Let's take import for general settings usually.
+                  ...importedTripData, // Base on import
+                  contacts: mergedContacts,
+                  shoppingList: mergedShoppingList,
+                  shoppingLocations: mergedLocations,
+                  expenses: mergedExpenses,
+                  shoppingCategories: mergedCategories
+              };
+
+              setItinerary(mergedItinerary);
+              setTripData(finalTripData);
               return true;
           }
       } catch (e) {
@@ -344,11 +416,22 @@ export default function App() {
       generalWeather: '' 
   };
 
-  const handleAddItem = (newItem: any) => {
-    const itemWithId = { ...newItem, id: Date.now().toString() };
+  const handleSaveItem = (newItem: any) => {
     setItinerary(prev => {
         const daySchedule = prev[activeDate];
-        const newItems = [...daySchedule.items, itemWithId].sort((a, b) => a.time.localeCompare(b.time));
+        let newItems;
+        
+        if (editingItem) {
+            // Update existing item
+            newItems = daySchedule.items.map(item => 
+                item.id === editingItem.id ? { ...newItem, id: editingItem.id } : item
+            ).sort((a, b) => a.time.localeCompare(b.time));
+        } else {
+            // Add new item
+            const itemWithId = { ...newItem, id: Date.now().toString() };
+            newItems = [...daySchedule.items, itemWithId].sort((a, b) => a.time.localeCompare(b.time));
+        }
+
         return {
             ...prev,
             [activeDate]: {
@@ -358,6 +441,7 @@ export default function App() {
             }
         };
     });
+    setEditingItem(null); // Reset editing state
   };
 
   const handleDeleteItem = (itemId: string) => {
@@ -373,6 +457,16 @@ export default function App() {
         };
     });
   };
+
+  const handleEditItem = (item: ItineraryItem) => {
+      setEditingItem(item);
+      setIsModalOpen(true);
+  }
+
+  const handleCloseModal = () => {
+      setIsModalOpen(false);
+      setEditingItem(null);
+  }
 
   return (
     <div className="min-h-screen bg-[#fcfbf9] pb-28 max-w-md mx-auto border-x border-stone-100 shadow-2xl relative overflow-hidden text-sumi">
@@ -477,6 +571,7 @@ export default function App() {
                             item={item} 
                             isLast={index === currentDay.items.length - 1} 
                             onDelete={() => handleDeleteItem(item.id)}
+                            onEdit={() => handleEditItem(item)}
                         />
                     ))}
                 </div>
@@ -536,9 +631,10 @@ export default function App() {
 
       <AddItemModal 
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAdd={handleAddItem}
+        onClose={handleCloseModal}
+        onAdd={handleSaveItem}
         date={activeDate}
+        initialData={editingItem}
       />
 
       <SyncModal 

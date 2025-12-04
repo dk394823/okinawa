@@ -1,8 +1,7 @@
 
-
 import React, { useState, useEffect, useRef } from 'react';
-import { TripData, FlightInfo, ItineraryState, ItemType, DaySchedule, ItineraryItem, ShoppingCategory, ShoppingColorType, ShoppingItem, Expense, ShoppingLocation, Contact } from '../types';
-import { PlaneIcon, WalletIcon, PhoneIcon, BedIcon, ShoppingBagIcon, PlusIcon, CheckIcon, CalculatorIcon, ExchangeIcon, EditIcon, ZapIcon, ArrowLeftIcon, TrashIcon, PhotoIcon, UsersIcon, PaperPlaneIcon, MapPinIcon, NavigationIcon, CameraIcon, SimplePlaneIcon, PlaneTakeoffIcon, GlobeIcon, GamepadIcon, DollarIcon, CreditCardIcon, BanknoteIcon } from './Icons';
+import { TripData, FlightInfo, ItineraryState, ItemType, DaySchedule, ItineraryItem, ShoppingCategory, ShoppingColorType, ShoppingItem, Expense, ShoppingLocation, Contact, ConvenienceStoreType } from '../types';
+import { PlaneIcon, WalletIcon, PhoneIcon, BedIcon, ShoppingBagIcon, PlusIcon, CheckIcon, CalculatorIcon, ExchangeIcon, EditIcon, ZapIcon, ArrowLeftIcon, TrashIcon, PhotoIcon, UsersIcon, PaperPlaneIcon, MapPinIcon, NavigationIcon, CameraIcon, SimplePlaneIcon, PlaneTakeoffIcon, GlobeIcon, GamepadIcon, DollarIcon, CreditCardIcon, BanknoteIcon, GiftIcon, PillIcon, LipstickIcon, EyeDropIcon, ToothbrushIcon, TagIcon, CoinsIcon, StoreIcon, BoxIcon, HeartIcon, MaskIcon, DropIcon, ToothIcon, MujiIcon, ThreeCoinsIcon, ShoppingCartIcon, CrossIcon, BearIcon, DuckIcon, FlowerIcon, StarIcon } from './Icons';
 
 interface ResourcesPageProps {
   tripData: TripData;
@@ -15,6 +14,34 @@ interface ResourcesPageProps {
 const getShoppingColor = (color: ShoppingColorType) => {
     // Fixed color: Ocean (Southern Group Flight Info style)
     return { bg: 'bg-ocean', text: 'text-ocean', light: 'bg-cyan-50/50', border: 'border-ocean/10', hex: '#2c7a7b' };
+}
+
+const getCategoryIcon = (iconName: string) => {
+    switch(iconName) {
+        case 'gift': return <GiftIcon className="w-8 h-8 text-ocean" />;
+        case 'heart': return <HeartIcon className="w-8 h-8 text-ocean" />;
+        case 'mask': return <MaskIcon className="w-8 h-8 text-ocean" />;
+        case 'drop': return <DropIcon className="w-8 h-8 text-ocean" />;
+        case 'tooth': return <ToothIcon className="w-8 h-8 text-ocean" />;
+        case 'muji': return <MujiIcon className="w-8 h-8 text-ocean" />;
+        case '3coins': return <ThreeCoinsIcon className="w-8 h-8 text-ocean" />;
+        case 'store': return <StoreIcon className="w-8 h-8 text-ocean" />;
+        case 'box': return <BoxIcon className="w-8 h-8 text-ocean" />;
+        case 'cart': return <ShoppingCartIcon className="w-8 h-8 text-ocean" />;
+        case 'cross': return <CrossIcon className="w-8 h-8 text-ocean" />;
+        case 'bear': return <BearIcon className="w-8 h-8 text-ocean" />;
+        case 'duck': return <DuckIcon className="w-8 h-8 text-ocean" />;
+        case 'flower': return <FlowerIcon className="w-8 h-8 text-ocean" />;
+        case 'star': return <StarIcon className="w-8 h-8 text-ocean" />;
+        // Backward compatibility
+        case 'pill': return <CrossIcon className="w-8 h-8 text-ocean" />;
+        case 'lipstick': return <HeartIcon className="w-8 h-8 text-ocean" />;
+        case 'eyedrop': return <DropIcon className="w-8 h-8 text-ocean" />;
+        case 'toothbrush': return <ToothIcon className="w-8 h-8 text-ocean" />;
+        case 'tag': return <MujiIcon className="w-8 h-8 text-ocean" />;
+        case 'coins': return <ThreeCoinsIcon className="w-8 h-8 text-ocean" />;
+        default: return <span className="text-3xl">{iconName}</span>; 
+    }
 }
 
 const isPersonalExpense = (ex: Expense) => {
@@ -599,6 +626,7 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
     const [payer, setPayer] = useState('');
     const [calcJpy, setCalcJpy] = useState('');
     const [expenseType, setExpenseType] = useState<'SHARED' | 'PERSONAL'>('SHARED');
+    const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
     
     // New fields
     const [newExpenseDate, setNewExpenseDate] = useState(new Date().toISOString().slice(0,10));
@@ -609,14 +637,16 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
     const [viewMode, setViewMode] = useState<'SHARED' | 'PERSONAL'>('SHARED');
     const [selectedContact, setSelectedContact] = useState<string>('');
     const [showSettlement, setShowSettlement] = useState(false);
+    
+    const expenseFormRef = useRef<HTMLFormElement>(null);
 
     const contactNames = tripData.contacts.map(c => c.name);
 
     useEffect(() => {
-        if (contactNames.length > 0 && selectedBeneficiaries.length === 0) {
+        if (contactNames.length > 0 && selectedBeneficiaries.length === 0 && !editingExpenseId) {
             setSelectedBeneficiaries(contactNames);
         }
-    }, [tripData.contacts.length]);
+    }, [tripData.contacts.length, editingExpenseId]);
 
     useEffect(() => {
         if (viewMode === 'PERSONAL' && !selectedContact && contactNames.length > 0) {
@@ -633,26 +663,90 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
         // Construct ISO string for sorting
         const dateTimeStr = `${newExpenseDate}T${newExpenseTime}:00`;
 
-        setTripData({
-            ...tripData,
-            expenses: [...tripData.expenses, { 
-                id: Date.now().toString(), 
-                amount: parseInt(amount), 
-                title: desc, 
-                payer, 
-                date: newExpenseDate,
-                timestamp: dateTimeStr,
-                beneficiaries: beneficiaries,
-                paymentMethod: paymentMethod,
-                exchangeRate: tripData.exchangeRate // Snapshot current rate
-            }]
-        });
+        if (editingExpenseId) {
+            // Update existing expense
+            setTripData({
+                ...tripData,
+                expenses: tripData.expenses.map(ex => {
+                    if (ex.id === editingExpenseId) {
+                        return {
+                            ...ex,
+                            amount: parseInt(amount),
+                            title: desc,
+                            payer,
+                            date: newExpenseDate,
+                            timestamp: dateTimeStr,
+                            beneficiaries: beneficiaries,
+                            paymentMethod: paymentMethod,
+                            // Preserve original exchangeRate if present, or use current if it was missing? 
+                            // We will keep the original rate.
+                            exchangeRate: ex.exchangeRate || tripData.exchangeRate
+                        };
+                    }
+                    return ex;
+                })
+            });
+            setEditingExpenseId(null);
+        } else {
+            // Create new expense
+            setTripData({
+                ...tripData,
+                expenses: [...tripData.expenses, { 
+                    id: Date.now().toString(), 
+                    amount: parseInt(amount), 
+                    title: desc, 
+                    payer, 
+                    date: newExpenseDate,
+                    timestamp: dateTimeStr,
+                    beneficiaries: beneficiaries,
+                    paymentMethod: paymentMethod,
+                    exchangeRate: tripData.exchangeRate // Snapshot current rate
+                }]
+            });
+        }
+        
+        // Reset form
         setAmount('');
         setDesc('');
-        // Reset time to current
         const now = new Date();
         setNewExpenseDate(now.toISOString().slice(0,10));
         setNewExpenseTime(now.toTimeString().slice(0,5));
+        setEditingExpenseId(null);
+        // Reset beneficiaries to all if shared mode default
+        if (expenseType === 'SHARED') setSelectedBeneficiaries(contactNames);
+    };
+
+    const handleEditExpense = (expense: Expense) => {
+        setAmount(expense.amount.toString());
+        setDesc(expense.title);
+        setPayer(expense.payer);
+        
+        if (expense.timestamp) {
+            setNewExpenseDate(expense.timestamp.slice(0, 10));
+            setNewExpenseTime(expense.timestamp.slice(11, 16));
+        } else {
+            setNewExpenseDate(expense.date);
+            setNewExpenseTime("12:00");
+        }
+        
+        setPaymentMethod(expense.paymentMethod || 'CASH');
+        
+        const isPersonal = isPersonalExpense(expense);
+        setExpenseType(isPersonal ? 'PERSONAL' : 'SHARED');
+        
+        // Ensure beneficiaries are properly set for the form
+        if (expense.beneficiaries && expense.beneficiaries.length > 0) {
+            setSelectedBeneficiaries(expense.beneficiaries);
+        } else {
+            // Legacy data support: if no beneficiaries field, assume shared among all
+            setSelectedBeneficiaries(contactNames); 
+        }
+
+        setEditingExpenseId(expense.id);
+        
+        if (expenseFormRef.current) {
+            expenseFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     };
 
     const toggleBeneficiary = (name: string) => {
@@ -877,10 +971,12 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
                     <div className="w-8 h-8 rounded-full bg-wasabi/10 flex items-center justify-center">
                         <WalletIcon className="w-4 h-4 text-wasabi" />
                     </div>
-                    <h2 className="text-lg font-black text-sumi">新增款項</h2>
+                    <h2 className="text-lg font-black text-sumi">
+                        {editingExpenseId ? `編輯款項` : `新增款項`}
+                    </h2>
                 </div>
                 
-                <form onSubmit={handleAddExpense} className="bg-white p-6 rounded-3xl border border-stone-100 shadow-soft mb-10">
+                <form ref={expenseFormRef} onSubmit={handleAddExpense} className={`bg-white p-6 rounded-3xl border shadow-soft mb-10 transition-colors scroll-mt-24 ${editingExpenseId ? 'border-orange-200 ring-1 ring-orange-200 bg-orange-50/10' : 'border-stone-100'}`}>
                     <div className="flex bg-stone-50 p-1 rounded-xl mb-6">
                         <button
                             type="button"
@@ -1013,9 +1109,12 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
                         </div>
                     )}
 
-                    <button type="submit" disabled={!amount || !desc || !payer} className="w-full bg-sumi text-white font-bold px-6 py-4 rounded-2xl text-sm disabled:opacity-50 hover:bg-black shadow-lg transition-transform active:scale-[0.98]">
-                        確認新增
-                    </button>
+                    <div className="flex gap-2">
+                        {editingExpenseId && <button type="button" onClick={() => { setEditingExpenseId(null); setAmount(''); setDesc(''); }} className="flex-1 bg-stone-200 text-stone-500 font-bold py-3 rounded-2xl text-sm hover:bg-stone-300 transition-colors">取消</button>}
+                        <button type="submit" disabled={!amount || !desc || !payer} className="flex-1 bg-sumi text-white font-bold px-6 py-4 rounded-2xl text-sm disabled:opacity-50 hover:bg-black shadow-lg transition-transform active:scale-[0.98]">
+                            {editingExpenseId ? '確認更新' : '確認新增'}
+                        </button>
+                    </div>
                 </form>
 
                 {/* List Filters */}
@@ -1064,7 +1163,7 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
                             const historicalRate = ex.exchangeRate || tripData.exchangeRate;
 
                             return (
-                                <div key={ex.id} className="bg-white p-5 rounded-2xl border border-stone-50 shadow-soft flex flex-col gap-3 relative overflow-hidden group">
+                                <div key={ex.id} className={`bg-white p-5 rounded-2xl border shadow-soft flex flex-col gap-3 relative overflow-hidden group transition-colors ${editingExpenseId === ex.id ? 'border-terracotta ring-1 ring-terracotta' : 'border-stone-50'}`}>
                                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${isPersonal ? 'bg-terracotta' : 'bg-wasabi'}`}></div>
 
                                     <div className="flex justify-between items-start pl-3">
@@ -1098,7 +1197,7 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
                                     </div>
                                     
                                     <div className="flex justify-between items-end pl-3 pt-2 border-t border-dashed border-stone-50">
-                                        <div className="flex flex-wrap gap-1 max-w-[80%]">
+                                        <div className="flex flex-wrap gap-1 max-w-[70%]">
                                             {!isPersonal && (
                                                 <>
                                                     <span className="text-[10px] text-stone-300 mr-1 mt-0.5">分攤:</span>
@@ -1112,11 +1211,16 @@ const MoneySection = ({ tripData, setTripData }: { tripData: TripData, setTripDa
                                                 </>
                                             )}
                                         </div>
-                                        <DeleteButton 
-                                            onDelete={() => setTripData({...tripData, expenses: tripData.expenses.filter(e => e.id !== ex.id)})} 
-                                            className="text-stone-300 hover:text-coral p-2 -mr-2 -mb-2"
-                                            iconSize="w-4 h-4"
-                                        />
+                                        <div className="flex gap-1">
+                                            <button onClick={() => handleEditExpense(ex)} className={`p-2 rounded-full hover:bg-stone-100 ${editingExpenseId === ex.id ? 'bg-terracotta text-white hover:bg-terracotta' : 'bg-stone-50 text-stone-400'}`}>
+                                                <EditIcon className="w-3.5 h-3.5" />
+                                            </button>
+                                            <DeleteButton 
+                                                onDelete={() => setTripData({...tripData, expenses: tripData.expenses.filter(e => e.id !== ex.id)})} 
+                                                className="bg-stone-50 text-stone-400 p-2 rounded-full hover:bg-stone-100"
+                                                iconSize="w-3.5 h-3.5"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -1133,12 +1237,14 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
     const [newItemName, setNewItemName] = useState('');
     const [newItemNote, setNewItemNote] = useState('');
     const [newItemImage, setNewItemImage] = useState<string | undefined>(undefined);
+    const [newItemStores, setNewItemStores] = useState<ConvenienceStoreType[]>([]);
     const [editingItemId, setEditingItemId] = useState<string | null>(null);
     
     const [isCreatingCategory, setIsCreatingCategory] = useState(false);
     const [isEditingCategory, setIsEditingCategory] = useState<string | null>(null);
     const [newCatName, setNewCatName] = useState('');
-    const [newCatEmoji, setNewCatEmoji] = useState('😊');
+    const [newCatEmoji, setNewCatEmoji] = useState('box');
+    const [newCatImage, setNewCatImage] = useState<string | undefined>(undefined);
 
     const [viewingItem, setViewingItem] = useState<ShoppingItem | null>(null);
     const [newLocName, setNewLocName] = useState('');
@@ -1149,6 +1255,7 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
     const [isEditingLocTitle, setIsEditingLocTitle] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const catFileInputRef = useRef<HTMLInputElement>(null);
     const locationFormRef = useRef<HTMLFormElement>(null);
     const itemFormRef = useRef<HTMLDivElement>(null);
 
@@ -1177,6 +1284,42 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
         }
     }
 
+    const handleCatImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    // Resize to 300x200 (3:2 ratio) for storage efficiency
+                    const targetWidth = 300;
+                    const targetHeight = 200;
+                    canvas.width = targetWidth;
+                    canvas.height = targetHeight;
+                    
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        // We want to fit the image into 300x200 maintaining aspect ratio (contain)
+                        // fill background with white (optional, but good for transparency)
+                        // Actually user wants white background fusion, let's keep transparency or white.
+                        // ctx.fillStyle = "white"; 
+                        // ctx.fillRect(0, 0, targetWidth, targetHeight);
+
+                        const scale = Math.min(targetWidth / img.width, targetHeight / img.height);
+                        const x = (targetWidth / 2) - (img.width / 2) * scale;
+                        const y = (targetHeight / 2) - (img.height / 2) * scale;
+                        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                    }
+                    
+                    setNewCatImage(canvas.toDataURL('image/png'));
+                }
+                img.src = event.target?.result as string;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
     const handleCreateOrEditCategory = (e: React.FormEvent) => {
         e.preventDefault();
         if(!newCatName) return;
@@ -1186,7 +1329,7 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
         if (isEditingCategory) {
              setTripData({
                 ...tripData,
-                shoppingCategories: tripData.shoppingCategories.map(c => c.id === isEditingCategory ? { ...c, name: newCatName, icon: newCatEmoji } : c)
+                shoppingCategories: tripData.shoppingCategories.map(c => c.id === isEditingCategory ? { ...c, name: newCatName, icon: newCatEmoji, customImage: newCatImage } : c)
             });
             setIsEditingCategory(null);
         } else {
@@ -1194,7 +1337,8 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                 id: Date.now().toString(),
                 name: newCatName,
                 icon: newCatEmoji,
-                color: fixedColor
+                color: fixedColor,
+                customImage: newCatImage
             };
             setTripData({
                 ...tripData,
@@ -1203,7 +1347,8 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
         }
        
         setNewCatName('');
-        setNewCatEmoji('😊');
+        setNewCatEmoji('box');
+        setNewCatImage(undefined);
         setIsCreatingCategory(false);
     };
 
@@ -1218,7 +1363,8 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                     ...item,
                     name: newItemName,
                     note: newItemNote,
-                    image: newItemImage
+                    image: newItemImage,
+                    targetStores: newItemStores
                 } : item)
             });
             setEditingItemId(null);
@@ -1231,7 +1377,8 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                     note: newItemNote,
                     categoryId: activeCategoryId,
                     isBought: false,
-                    image: newItemImage
+                    image: newItemImage,
+                    targetStores: newItemStores
                 }]
             });
         }
@@ -1239,7 +1386,16 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
         setNewItemName('');
         setNewItemNote('');
         setNewItemImage(undefined);
+        setNewItemStores([]);
     };
+
+    const toggleStore = (store: ConvenienceStoreType) => {
+        if (newItemStores.includes(store)) {
+            setNewItemStores(newItemStores.filter(s => s !== store));
+        } else {
+            setNewItemStores([...newItemStores, store]);
+        }
+    }
 
     const deleteItem = (id: string) => {
         setTripData({
@@ -1306,6 +1462,7 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
         e.stopPropagation();
         setNewCatName(cat.name);
         setNewCatEmoji(cat.icon);
+        setNewCatImage(cat.customImage);
         setIsEditingCategory(cat.id);
         setIsCreatingCategory(true);
     };
@@ -1314,6 +1471,7 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
         setNewItemName(item.name);
         setNewItemNote(item.note || '');
         setNewItemImage(item.image);
+        setNewItemStores(item.targetStores || []);
         setEditingItemId(item.id);
 
         if (itemFormRef.current) {
@@ -1332,7 +1490,7 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                     </button>
                     <div className="flex-1">
                         <h2 className="text-xl font-black text-sumi flex items-center gap-2">
-                            <span>{activeCategory?.icon}</span>
+                            <span>{getCategoryIcon(activeCategory?.icon)}</span>
                             <span>{activeCategory?.name}</span>
                             <button onClick={(e) => activeCategory && startEditCategory(activeCategory, e)} className="p-1 text-stone-300 hover:text-stone-500">
                                 <EditIcon className="w-4 h-4" />
@@ -1344,14 +1502,27 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                 
                 {/* Edit Category Form (reused) */}
                  {isCreatingCategory && isEditingCategory && (
-                    <form onSubmit={handleCreateOrEditCategory} className="bg-stone-50 border border-stone-100 border-dashed p-4 rounded-2xl mb-6 animate-[fadeIn_0.2s_ease-out]">
+                    <form onSubmit={handleCreateOrEditCategory} className="bg-stone-50 border border-stone-100 border-dashed rounded-2xl p-4 mb-6 animate-[fadeIn_0.2s_ease-out]">
                         <p className="text-xs font-bold text-terracotta mb-3">編輯分類</p>
                         <div className="flex gap-3 mb-3">
-                            <input type="text" value={newCatEmoji} onChange={e => setNewCatEmoji(e.target.value)} className="w-14 text-center bg-white rounded-xl text-xl outline-none shadow-sm" maxLength={2} />
+                            <div className="relative">
+                                <button 
+                                    type="button" 
+                                    onClick={() => catFileInputRef.current?.click()}
+                                    className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all overflow-hidden ${newCatImage ? 'border-transparent shadow-sm' : 'border-stone-200 bg-white text-stone-300 hover:bg-stone-100'}`}
+                                >
+                                    {newCatImage ? (
+                                        <img src={newCatImage} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <CameraIcon className="w-5 h-5 text-stone-300" />
+                                    )}
+                                </button>
+                                <input type="file" ref={catFileInputRef} className="hidden" accept="image/*" onChange={handleCatImageUpload} />
+                            </div>
                             <input type="text" value={newCatName} onChange={e => setNewCatName(e.target.value)} className="flex-1 bg-white px-4 py-3 rounded-xl text-sm outline-none shadow-sm" autoFocus />
                         </div>
                         <div className="flex gap-2">
-                            <button type="button" onClick={() => { setIsCreatingCategory(false); setIsEditingCategory(null); setNewCatName(''); setNewCatEmoji('😊'); }} className="flex-1 bg-stone-200 text-stone-500 font-bold py-3 rounded-xl text-xs">取消</button>
+                            <button type="button" onClick={() => { setIsCreatingCategory(false); setIsEditingCategory(null); setNewCatName(''); setNewCatEmoji('box'); setNewCatImage(undefined); }} className="flex-1 bg-stone-200 text-stone-500 font-bold py-3 rounded-xl text-xs">取消</button>
                             <button type="submit" className="flex-1 bg-coral text-white font-bold py-3 rounded-xl text-xs">更新</button>
                         </div>
                     </form>
@@ -1376,6 +1547,13 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
 
                              <div className="flex-1 min-w-0 py-1">
                                 <h3 className="font-extrabold text-sumi text-sm truncate">{item.name}</h3>
+                                {activeCategoryId === 'cat-store' && item.targetStores && item.targetStores.length > 0 && (
+                                    <div className="flex gap-1 mt-1">
+                                        {item.targetStores.includes('SEVEN') && <span className="text-[9px] font-black text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-200">7-11</span>}
+                                        {item.targetStores.includes('FAMILY') && <span className="text-[9px] font-black text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-200">Family</span>}
+                                        {item.targetStores.includes('LAWSON') && <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">LAWSON</span>}
+                                    </div>
+                                )}
                                 {item.note && <p className="text-xs text-stone-400 mt-0.5 truncate">{item.note.replace(/\n/g, ' ')}</p>}
                              </div>
 
@@ -1420,8 +1598,36 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                         className="w-full bg-white px-3 py-2 rounded-xl text-xs outline-none shadow-sm resize-none leading-relaxed"
                         rows={3}
                     />
-                    <div className="flex gap-2">
-                        {editingItemId && <button onClick={() => { setEditingItemId(null); setNewItemName(''); setNewItemNote(''); setNewItemImage(undefined); }} className="flex-1 bg-stone-200 text-stone-500 py-2 rounded-xl text-xs font-bold">取消</button>}
+                    
+                    {/* Store Selection - Only for 'cat-store' category */}
+                    {activeCategoryId === 'cat-store' && (
+                        <div className="flex gap-2">
+                            <button 
+                                type="button" 
+                                onClick={() => toggleStore('SEVEN')}
+                                className={`flex-1 py-2 rounded-lg text-[10px] font-black border transition-all ${newItemStores.includes('SEVEN') ? 'bg-white border-orange-500 text-orange-600 shadow-sm' : 'bg-stone-100 border-transparent text-stone-400'}`}
+                            >
+                                7-ELEVEN
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={() => toggleStore('FAMILY')}
+                                className={`flex-1 py-2 rounded-lg text-[10px] font-black border transition-all ${newItemStores.includes('FAMILY') ? 'bg-white border-green-500 text-green-600 shadow-sm' : 'bg-stone-100 border-transparent text-stone-400'}`}
+                            >
+                                FamilyMart
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={() => toggleStore('LAWSON')}
+                                className={`flex-1 py-2 rounded-lg text-[10px] font-black border transition-all ${newItemStores.includes('LAWSON') ? 'bg-white border-blue-500 text-blue-600 shadow-sm' : 'bg-stone-100 border-transparent text-stone-400'}`}
+                            >
+                                LAWSON
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="flex gap-2 mt-1">
+                        {editingItemId && <button onClick={() => { setEditingItemId(null); setNewItemName(''); setNewItemNote(''); setNewItemImage(undefined); setNewItemStores([]); }} className="flex-1 bg-stone-200 text-stone-500 py-2 rounded-xl text-xs font-bold">取消</button>}
                         <button onClick={handleAddItem} disabled={!newItemName} className="flex-1 bg-sumi text-white py-3 rounded-xl text-xs font-bold disabled:opacity-50 transition-all active:scale-[0.98]">
                             {editingItemId ? '更新商品' : '新增'}
                         </button>
@@ -1440,7 +1646,16 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                             )}
                             <div className="p-6">
                                 <div className="flex justify-between items-start mb-4">
-                                     <h3 className="text-2xl font-black text-sumi">{viewingItem.name}</h3>
+                                     <div>
+                                        <h3 className="text-2xl font-black text-sumi mb-2">{viewingItem.name}</h3>
+                                        {viewingItem.categoryId === 'cat-store' && viewingItem.targetStores && viewingItem.targetStores.length > 0 && (
+                                            <div className="flex gap-2 flex-wrap">
+                                                {viewingItem.targetStores.includes('SEVEN') && <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-200">7-11</span>}
+                                                {viewingItem.targetStores.includes('FAMILY') && <span className="text-[10px] font-black text-green-600 bg-green-50 px-2 py-1 rounded border border-green-200">FamilyMart</span>}
+                                                {viewingItem.targetStores.includes('LAWSON') && <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-200">LAWSON</span>}
+                                            </div>
+                                        )}
+                                     </div>
                                      <div className="flex gap-2">
                                          <button onClick={() => { startEditItem(viewingItem); setViewingItem(null); }} className="bg-stone-100 text-stone-400 p-2 rounded-full">
                                             <EditIcon className="w-4 h-4" />
@@ -1567,26 +1782,32 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                         </h2>
                     )}
                 </div>
-                <button onClick={() => { setIsCreatingCategory(!isCreatingCategory); setIsEditingCategory(null); setNewCatName(''); setNewCatEmoji('😊'); }} className="text-xs font-bold text-white bg-sumi px-4 py-2 rounded-full hover:bg-black transition-colors">
+                <button onClick={() => { setIsCreatingCategory(!isCreatingCategory); setIsEditingCategory(null); setNewCatName(''); setNewCatEmoji('box'); setNewCatImage(undefined); }} className="text-xs font-bold text-white bg-sumi px-4 py-2 rounded-full hover:bg-black transition-colors">
                     {isCreatingCategory && !isEditingCategory ? '取消' : '建立清單'}
                 </button>
             </div>
 
             {/* Category Creation Form */}
             {isCreatingCategory && (
-                <form onSubmit={handleCreateOrEditCategory} className="bg-stone-50 border border-stone-100 border-dashed p-4 rounded-2xl mb-6 animate-[fadeIn_0.2s_ease-out]">
+                <form onSubmit={handleCreateOrEditCategory} className="bg-stone-50 border border-stone-100 border-dashed rounded-2xl p-4 mb-6 animate-[fadeIn_0.2s_ease-out]">
                     <p className={`text-xs font-bold mb-3 ${isEditingCategory ? 'text-terracotta' : 'text-stone-400'}`}>{isEditingCategory ? '編輯分類' : '建立新分類'}</p>
                     <div className="flex gap-3 mb-3">
+                        <div className="relative">
+                            <button 
+                                type="button" 
+                                onClick={() => catFileInputRef.current?.click()}
+                                className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all overflow-hidden ${newCatImage ? 'border-transparent shadow-sm' : 'border-stone-200 bg-white text-stone-300 hover:bg-stone-100'}`}
+                            >
+                                {newCatImage ? (
+                                    <img src={newCatImage} className="w-full h-full object-cover" />
+                                ) : (
+                                    <CameraIcon className="w-5 h-5 text-stone-300" />
+                                )}
+                            </button>
+                            <input type="file" ref={catFileInputRef} className="hidden" accept="image/*" onChange={handleCatImageUpload} />
+                        </div>
                         <input 
                             type="text" 
-                            value={newCatEmoji}
-                            onChange={e => setNewCatEmoji(e.target.value)}
-                            className="w-14 text-center bg-white rounded-xl text-xl outline-none shadow-sm"
-                            maxLength={2}
-                        />
-                        <input 
-                            type="text" 
-                            placeholder="清單名稱 (例: 藥妝)"
                             value={newCatName}
                             onChange={e => setNewCatName(e.target.value)}
                             className="flex-1 bg-white px-4 py-3 rounded-xl text-sm outline-none shadow-sm"
@@ -1594,7 +1815,7 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                         />
                     </div>
                     <div className="flex gap-2">
-                         {isEditingCategory && <button type="button" onClick={() => { setIsCreatingCategory(false); setIsEditingCategory(null); setNewCatName(''); setNewCatEmoji('😊'); }} className="flex-1 bg-stone-200 text-stone-500 font-bold py-3 rounded-xl text-xs">取消</button>}
+                         {isEditingCategory && <button type="button" onClick={() => { setIsCreatingCategory(false); setIsEditingCategory(null); setNewCatName(''); setNewCatEmoji('box'); setNewCatImage(undefined); }} className="flex-1 bg-stone-200 text-stone-500 font-bold py-3 rounded-xl text-xs">取消</button>}
                         <button type="submit" className="flex-1 bg-coral text-white font-bold py-3 rounded-xl text-xs shadow-md transition-transform active:scale-[0.98]">{isEditingCategory ? '更新' : '確認建立'}</button>
                     </div>
                 </form>
@@ -1603,18 +1824,25 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
             {/* Category Grid */}
             <div className="grid grid-cols-2 gap-3 mb-12">
                 {tripData.shoppingCategories.map(cat => {
-                    const styles = getShoppingColor(cat.color);
                     const count = tripData.shoppingList.filter(i => i.categoryId === cat.id).length;
                     
                     return (
                         <div key={cat.id} className="relative group">
                              <button 
                                 onClick={() => setActiveCategoryId(cat.id)}
-                                className={`w-full overflow-hidden rounded-2xl p-5 text-left transition-all hover:scale-[1.02] active:scale-[0.98] border shadow-sm ${styles.light} ${styles.border} backdrop-blur-md`}
+                                className={`w-full overflow-hidden rounded-2xl p-5 text-center transition-all hover:scale-[1.02] active:scale-[0.98] border shadow-sm bg-white border-stone-100 flex flex-col items-center justify-center gap-3`}
                             >
-                                <div className="text-3xl mb-3">{cat.icon}</div>
-                                <h3 className={`font-black text-sm mb-1 ${styles.text}`}>{cat.name}</h3>
-                                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{count} ITEMS</p>
+                                <div className="mb-1 w-full flex justify-center">
+                                    {cat.customImage ? (
+                                        <img src={cat.customImage} alt={cat.name} className="w-full aspect-[3/2] object-contain" />
+                                    ) : (
+                                        getCategoryIcon(cat.icon)
+                                    )}
+                                </div>
+                                <div>
+                                    <h3 className={`font-black text-sm mb-1 text-sumi`}>{cat.name}</h3>
+                                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{count} ITEMS</p>
+                                </div>
                             </button>
                             <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onClick={(e) => startEditCategory(cat, e)} className="p-1.5 bg-white/50 hover:bg-white rounded-full text-stone-400 hover:text-stone-600 backdrop-blur-sm">
