@@ -15,16 +15,17 @@ const INITIAL_ITINERARY: ItineraryState = DATES.reduce((acc, curr) => {
   return acc;
 }, {} as ItineraryState);
 
+// Icons set to 'default' to force user upload visualization
 const INITIAL_SHOPPING_CATEGORIES: ShoppingCategory[] = [
-    { id: 'cat-gift', name: '伴手禮', icon: 'gift', color: 'ocean' },
-    { id: 'cat-pill', name: '保健．藥品', icon: 'cross', color: 'ocean' },
-    { id: 'cat-beauty', name: '美妝．保養', icon: 'heart', color: 'ocean' },
-    { id: 'cat-eye', name: '眼藥水．洗眼液', icon: 'drop', color: 'ocean' },
-    { id: 'cat-dental', name: '牙膏', icon: 'tooth', color: 'ocean' },
-    { id: 'cat-muji', name: '無印良品', icon: 'muji', color: 'ocean' },
-    { id: 'cat-3coins', name: '3 coins', icon: '3coins', color: 'ocean' },
-    { id: 'cat-store', name: '超商', icon: 'cart', color: 'ocean' },
-    { id: 'cat-other', name: '其他', icon: 'box', color: 'ocean' },
+    { id: 'cat-gift', name: '伴手禮', icon: 'default', color: 'ocean' },
+    { id: 'cat-pill', name: '保健．藥品', icon: 'default', color: 'ocean' },
+    { id: 'cat-beauty', name: '美妝．保養', icon: 'default', color: 'ocean' },
+    { id: 'cat-eye', name: '眼藥水．洗眼液', icon: 'default', color: 'ocean' },
+    { id: 'cat-dental', name: '牙膏', icon: 'default', color: 'ocean' },
+    { id: 'cat-muji', name: '無印良品', icon: 'default', color: 'ocean' },
+    { id: 'cat-3coins', name: '3 coins', icon: 'default', color: 'ocean' },
+    { id: 'cat-store', name: '超商', icon: 'default', color: 'ocean' },
+    { id: 'cat-other', name: '其他', icon: 'default', color: 'ocean' },
 ];
 
 const INITIAL_TRIP_DATA: TripData = {

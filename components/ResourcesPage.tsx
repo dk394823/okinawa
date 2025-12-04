@@ -16,32 +16,10 @@ const getShoppingColor = (color: ShoppingColorType) => {
     return { bg: 'bg-ocean', text: 'text-ocean', light: 'bg-cyan-50/50', border: 'border-ocean/10', hex: '#2c7a7b' };
 }
 
+// Simplified to generic placeholder logic
 const getCategoryIcon = (iconName: string) => {
-    switch(iconName) {
-        case 'gift': return <GiftIcon className="w-8 h-8 text-ocean" />;
-        case 'heart': return <HeartIcon className="w-8 h-8 text-ocean" />;
-        case 'mask': return <MaskIcon className="w-8 h-8 text-ocean" />;
-        case 'drop': return <DropIcon className="w-8 h-8 text-ocean" />;
-        case 'tooth': return <ToothIcon className="w-8 h-8 text-ocean" />;
-        case 'muji': return <MujiIcon className="w-8 h-8 text-ocean" />;
-        case '3coins': return <ThreeCoinsIcon className="w-8 h-8 text-ocean" />;
-        case 'store': return <StoreIcon className="w-8 h-8 text-ocean" />;
-        case 'box': return <BoxIcon className="w-8 h-8 text-ocean" />;
-        case 'cart': return <ShoppingCartIcon className="w-8 h-8 text-ocean" />;
-        case 'cross': return <CrossIcon className="w-8 h-8 text-ocean" />;
-        case 'bear': return <BearIcon className="w-8 h-8 text-ocean" />;
-        case 'duck': return <DuckIcon className="w-8 h-8 text-ocean" />;
-        case 'flower': return <FlowerIcon className="w-8 h-8 text-ocean" />;
-        case 'star': return <StarIcon className="w-8 h-8 text-ocean" />;
-        // Backward compatibility
-        case 'pill': return <CrossIcon className="w-8 h-8 text-ocean" />;
-        case 'lipstick': return <HeartIcon className="w-8 h-8 text-ocean" />;
-        case 'eyedrop': return <DropIcon className="w-8 h-8 text-ocean" />;
-        case 'toothbrush': return <ToothIcon className="w-8 h-8 text-ocean" />;
-        case 'tag': return <MujiIcon className="w-8 h-8 text-ocean" />;
-        case 'coins': return <ThreeCoinsIcon className="w-8 h-8 text-ocean" />;
-        default: return <span className="text-3xl">{iconName}</span>; 
-    }
+    // We strictly use custom images now, this acts as a fallback for the header
+    return <CameraIcon className="w-8 h-8 text-stone-200" />;
 }
 
 const isPersonalExpense = (ex: Expense) => {
@@ -1243,7 +1221,7 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
     const [isCreatingCategory, setIsCreatingCategory] = useState(false);
     const [isEditingCategory, setIsEditingCategory] = useState<string | null>(null);
     const [newCatName, setNewCatName] = useState('');
-    const [newCatEmoji, setNewCatEmoji] = useState('box');
+    // Remove icon selection state since we rely on custom image or default
     const [newCatImage, setNewCatImage] = useState<string | undefined>(undefined);
 
     const [viewingItem, setViewingItem] = useState<ShoppingItem | null>(null);
@@ -1300,12 +1278,6 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                     
                     const ctx = canvas.getContext('2d');
                     if (ctx) {
-                        // We want to fit the image into 300x200 maintaining aspect ratio (contain)
-                        // fill background with white (optional, but good for transparency)
-                        // Actually user wants white background fusion, let's keep transparency or white.
-                        // ctx.fillStyle = "white"; 
-                        // ctx.fillRect(0, 0, targetWidth, targetHeight);
-
                         const scale = Math.min(targetWidth / img.width, targetHeight / img.height);
                         const x = (targetWidth / 2) - (img.width / 2) * scale;
                         const y = (targetHeight / 2) - (img.height / 2) * scale;
@@ -1329,14 +1301,14 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
         if (isEditingCategory) {
              setTripData({
                 ...tripData,
-                shoppingCategories: tripData.shoppingCategories.map(c => c.id === isEditingCategory ? { ...c, name: newCatName, icon: newCatEmoji, customImage: newCatImage } : c)
+                shoppingCategories: tripData.shoppingCategories.map(c => c.id === isEditingCategory ? { ...c, name: newCatName, icon: 'default', customImage: newCatImage } : c)
             });
             setIsEditingCategory(null);
         } else {
              const newCat: ShoppingCategory = {
                 id: Date.now().toString(),
                 name: newCatName,
-                icon: newCatEmoji,
+                icon: 'default',
                 color: fixedColor,
                 customImage: newCatImage
             };
@@ -1347,7 +1319,6 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
         }
        
         setNewCatName('');
-        setNewCatEmoji('box');
         setNewCatImage(undefined);
         setIsCreatingCategory(false);
     };
@@ -1461,7 +1432,7 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
     const startEditCategory = (cat: ShoppingCategory, e: React.MouseEvent) => {
         e.stopPropagation();
         setNewCatName(cat.name);
-        setNewCatEmoji(cat.icon);
+        // icon state removed
         setNewCatImage(cat.customImage);
         setIsEditingCategory(cat.id);
         setIsCreatingCategory(true);
@@ -1480,7 +1451,6 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
     };
 
     if (activeCategoryId) {
-        const styles = getShoppingColor(activeCategory?.color || 'slate');
         
         return (
             <div className="pb-24 px-7 animate-[fadeIn_0.3s_ease-out]">
@@ -1490,7 +1460,8 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                     </button>
                     <div className="flex-1">
                         <h2 className="text-xl font-black text-sumi flex items-center gap-2">
-                            <span>{getCategoryIcon(activeCategory?.icon)}</span>
+                            {/* Always show custom image or placeholder icon in header if available, else just text */}
+                            <span>{activeCategory?.customImage ? <img src={activeCategory.customImage} className="w-8 h-8 object-contain" /> : <CameraIcon className="w-6 h-6 text-stone-300" />}</span>
                             <span>{activeCategory?.name}</span>
                             <button onClick={(e) => activeCategory && startEditCategory(activeCategory, e)} className="p-1 text-stone-300 hover:text-stone-500">
                                 <EditIcon className="w-4 h-4" />
@@ -1522,7 +1493,7 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                             <input type="text" value={newCatName} onChange={e => setNewCatName(e.target.value)} className="flex-1 bg-white px-4 py-3 rounded-xl text-sm outline-none shadow-sm" autoFocus />
                         </div>
                         <div className="flex gap-2">
-                            <button type="button" onClick={() => { setIsCreatingCategory(false); setIsEditingCategory(null); setNewCatName(''); setNewCatEmoji('box'); setNewCatImage(undefined); }} className="flex-1 bg-stone-200 text-stone-500 font-bold py-3 rounded-xl text-xs">取消</button>
+                            <button type="button" onClick={() => { setIsCreatingCategory(false); setIsEditingCategory(null); setNewCatName(''); setNewCatImage(undefined); }} className="flex-1 bg-stone-200 text-stone-500 font-bold py-3 rounded-xl text-xs">取消</button>
                             <button type="submit" className="flex-1 bg-coral text-white font-bold py-3 rounded-xl text-xs">更新</button>
                         </div>
                     </form>
@@ -1782,7 +1753,7 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                         </h2>
                     )}
                 </div>
-                <button onClick={() => { setIsCreatingCategory(!isCreatingCategory); setIsEditingCategory(null); setNewCatName(''); setNewCatEmoji('box'); setNewCatImage(undefined); }} className="text-xs font-bold text-white bg-sumi px-4 py-2 rounded-full hover:bg-black transition-colors">
+                <button onClick={() => { setIsCreatingCategory(!isCreatingCategory); setIsEditingCategory(null); setNewCatName(''); setNewCatImage(undefined); }} className="text-xs font-bold text-white bg-sumi px-4 py-2 rounded-full hover:bg-black transition-colors">
                     {isCreatingCategory && !isEditingCategory ? '取消' : '建立清單'}
                 </button>
             </div>
@@ -1815,7 +1786,7 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                         />
                     </div>
                     <div className="flex gap-2">
-                         {isEditingCategory && <button type="button" onClick={() => { setIsCreatingCategory(false); setIsEditingCategory(null); setNewCatName(''); setNewCatEmoji('box'); setNewCatImage(undefined); }} className="flex-1 bg-stone-200 text-stone-500 font-bold py-3 rounded-xl text-xs">取消</button>}
+                         {isEditingCategory && <button type="button" onClick={() => { setIsCreatingCategory(false); setIsEditingCategory(null); setNewCatName(''); setNewCatImage(undefined); }} className="flex-1 bg-stone-200 text-stone-500 font-bold py-3 rounded-xl text-xs">取消</button>}
                         <button type="submit" className="flex-1 bg-coral text-white font-bold py-3 rounded-xl text-xs shadow-md transition-transform active:scale-[0.98]">{isEditingCategory ? '更新' : '確認建立'}</button>
                     </div>
                 </form>
@@ -1832,11 +1803,13 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                                 onClick={() => setActiveCategoryId(cat.id)}
                                 className={`w-full overflow-hidden rounded-2xl p-5 text-center transition-all hover:scale-[1.02] active:scale-[0.98] border shadow-sm bg-white border-stone-100 flex flex-col items-center justify-center gap-3`}
                             >
-                                <div className="mb-1 w-full flex justify-center">
+                                <div className="mb-1 w-full flex justify-center h-16 items-center">
                                     {cat.customImage ? (
-                                        <img src={cat.customImage} alt={cat.name} className="w-full aspect-[3/2] object-contain" />
+                                        <img src={cat.customImage} alt={cat.name} className="w-full h-full object-contain" />
                                     ) : (
-                                        getCategoryIcon(cat.icon)
+                                        <div className="w-full h-full flex items-center justify-center bg-stone-50 rounded-lg border border-dashed border-stone-200">
+                                            <CameraIcon className="w-6 h-6 text-stone-300" />
+                                        </div>
                                     )}
                                 </div>
                                 <div>
