@@ -1460,8 +1460,6 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                     </button>
                     <div className="flex-1">
                         <h2 className="text-xl font-black text-sumi flex items-center gap-2">
-                            {/* Always show custom image or placeholder icon in header if available, else just text */}
-                            <span>{activeCategory?.customImage ? <img src={activeCategory.customImage} className="w-8 h-8 object-contain" /> : <CameraIcon className="w-6 h-6 text-stone-300" />}</span>
                             <span>{activeCategory?.name}</span>
                             <button onClick={(e) => activeCategory && startEditCategory(activeCategory, e)} className="p-1 text-stone-300 hover:text-stone-500">
                                 <EditIcon className="w-4 h-4" />
@@ -1474,7 +1472,7 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                 {/* Edit Category Form (reused) */}
                  {isCreatingCategory && isEditingCategory && (
                     <form onSubmit={handleCreateOrEditCategory} className="bg-stone-50 border border-stone-100 border-dashed rounded-2xl p-4 mb-6 animate-[fadeIn_0.2s_ease-out]">
-                        <p className="text-xs font-bold text-terracotta mb-3">編輯分類</p>
+                        <p className="text-xs font-bold mb-3 text-stone-400">{isEditingCategory ? '編輯分類' : '建立新分類'}</p>
                         <div className="flex gap-3 mb-3">
                             <div className="relative">
                                 <button 
@@ -1761,7 +1759,7 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
             {/* Category Creation Form */}
             {isCreatingCategory && (
                 <form onSubmit={handleCreateOrEditCategory} className="bg-stone-50 border border-stone-100 border-dashed rounded-2xl p-4 mb-6 animate-[fadeIn_0.2s_ease-out]">
-                    <p className={`text-xs font-bold mb-3 ${isEditingCategory ? 'text-terracotta' : 'text-stone-400'}`}>{isEditingCategory ? '編輯分類' : '建立新分類'}</p>
+                    <p className="text-xs font-bold text-stone-400 mb-3">{isEditingCategory ? '編輯分類' : '建立新分類'}</p>
                     <div className="flex gap-3 mb-3">
                         <div className="relative">
                             <button 
