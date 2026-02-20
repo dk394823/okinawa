@@ -140,14 +140,11 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, isLast, onDelete, onEd
         <h3 className="text-lg font-extrabold text-sumi mb-1 leading-snug tracking-tight pr-4">{item.title}</h3>
         
         <div className="flex flex-col text-xs mb-4 tracking-wide">
-          <div className="flex items-center text-stone-500 font-bold">
-            <MapPinIcon className="w-3 h-3 mr-1.5 opacity-70 flex-shrink-0" />
-            <span className="truncate">{item.location}</span>
-          </div>
-          {item.address && (
-              <div className="flex items-center text-stone-400 font-medium pl-4.5 mt-0.5">
-                  <span className="truncate">{item.address}</span>
-              </div>
+          {(item.address || (item.location && item.location !== item.title)) && (
+            <div className="flex items-center text-stone-500 font-bold">
+              <MapPinIcon className="w-3 h-3 mr-1.5 opacity-70 flex-shrink-0" />
+              <span className="truncate">{item.address || item.location}</span>
+            </div>
           )}
         </div>
 
