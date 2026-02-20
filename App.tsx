@@ -3,6 +3,7 @@ import { DATES, DaySchedule, ItemType, ItineraryState, TripData, ShoppingCategor
 import { ItemCard, AddItemModal } from './components/ItineraryComponents';
 import { ResourcesPage } from './components/ResourcesPage';
 import { PlusIcon, CloudSunIcon, ListIcon, InfoIcon, DollarIcon, ShoppingBagIcon, EditIcon, CloudIcon, DownloadIcon, ShareIcon, FileTextIcon, ImageOffIcon, PhotoIcon } from './components/Icons';
+import { saveData, loadData } from './services/storageService';
 
 // Initialize with empty schedule structure
 const INITIAL_ITINERARY: ItineraryState = DATES.reduce((acc, curr) => {
@@ -271,52 +272,34 @@ export default function App() {
   const [editingItem, setEditingItem] = useState<ItineraryItem | null>(null);
 
   useEffect(() => {
-    const savedItinerary = localStorage.getItem('tabilog-okinawa-2026');
-    const savedTripData = localStorage.getItem('tabilog-okinawa-2026-data-v3');
-    
-    if (savedItinerary) {
-      try {
-        setItinerary(JSON.parse(savedItinerary));
-      } catch (e) {
-        console.error("Failed to parse saved itinerary");
-      }
-    }
-    if (savedTripData) {
-       try {
-        const parsed = JSON.parse(savedTripData);
-        // Ensure shopping categories are initialized if empty
-        if (!parsed.shoppingCategories || parsed.shoppingCategories.length === 0) {
-            parsed.shoppingCategories = INITIAL_SHOPPING_CATEGORIES;
+    const initData = async () => {
+        const savedItinerary = await loadData('tabilog-okinawa-2026');
+        const savedTripData = await loadData('tabilog-okinawa-2026-data-v3');
+        
+        if (savedItinerary) {
+            setItinerary(savedItinerary);
         }
-        if (!parsed.shoppingTitle) parsed.shoppingTitle = "購物清單";
-        if (!parsed.shoppingLocations) parsed.shoppingLocations = [];
-        if (!parsed.shoppingLocationTitle) parsed.shoppingLocationTitle = "購物地點";
-        setTripData({ ...INITIAL_TRIP_DATA, ...parsed });
-      } catch (e) {
-        console.error("Failed to parse saved trip data");
-      } 
-    }
+        if (savedTripData) {
+            // Ensure shopping categories are initialized if empty
+            if (!savedTripData.shoppingCategories || savedTripData.shoppingCategories.length === 0) {
+                savedTripData.shoppingCategories = INITIAL_SHOPPING_CATEGORIES;
+            }
+            if (!savedTripData.shoppingTitle) savedTripData.shoppingTitle = "購物清單";
+            if (!savedTripData.shoppingLocations) savedTripData.shoppingLocations = [];
+            if (!savedTripData.shoppingLocationTitle) savedTripData.shoppingLocationTitle = "購物地點";
+            setTripData({ ...INITIAL_TRIP_DATA, ...savedTripData });
+        }
+    };
+    
+    initData();
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('tabilog-okinawa-2026', JSON.stringify(itinerary));
-    } catch (e) {
-      console.warn("LocalStorage save failed (Itinerary)", e);
-    }
+    saveData('tabilog-okinawa-2026', itinerary);
   }, [itinerary]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('tabilog-okinawa-2026-data-v3', JSON.stringify(tripData));
-    } catch (e) {
-      console.warn("LocalStorage save failed (TripData)", e);
-      // If it's a quota error, we might want to notify the user
-      if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
-          // We don't want to alert on every single keystroke if they are over quota, 
-          // but for image uploads it's useful.
-      }
-    }
+    saveData('tabilog-okinawa-2026-data-v3', tripData);
   }, [tripData]);
 
   // Generic helper to merge lists based on ID
