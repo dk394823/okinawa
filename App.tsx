@@ -299,11 +299,24 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('tabilog-okinawa-2026', JSON.stringify(itinerary));
+    try {
+      localStorage.setItem('tabilog-okinawa-2026', JSON.stringify(itinerary));
+    } catch (e) {
+      console.warn("LocalStorage save failed (Itinerary)", e);
+    }
   }, [itinerary]);
 
   useEffect(() => {
-    localStorage.setItem('tabilog-okinawa-2026-data-v3', JSON.stringify(tripData));
+    try {
+      localStorage.setItem('tabilog-okinawa-2026-data-v3', JSON.stringify(tripData));
+    } catch (e) {
+      console.warn("LocalStorage save failed (TripData)", e);
+      // If it's a quota error, we might want to notify the user
+      if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+          // We don't want to alert on every single keystroke if they are over quota, 
+          // but for image uploads it's useful.
+      }
+    }
   }, [tripData]);
 
   // Generic helper to merge lists based on ID
