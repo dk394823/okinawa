@@ -270,6 +270,7 @@ export default function App() {
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingItem, setEditingItem] = useState<ItineraryItem | null>(null);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   useEffect(() => {
     const initData = async () => {
@@ -289,18 +290,23 @@ export default function App() {
             if (!savedTripData.shoppingLocationTitle) savedTripData.shoppingLocationTitle = "購物地點";
             setTripData({ ...INITIAL_TRIP_DATA, ...savedTripData });
         }
+        setIsDataLoaded(true);
     };
     
     initData();
   }, []);
 
   useEffect(() => {
-    saveData('tabilog-okinawa-2026', itinerary);
-  }, [itinerary]);
+    if (isDataLoaded) {
+      saveData('tabilog-okinawa-2026', itinerary);
+    }
+  }, [itinerary, isDataLoaded]);
 
   useEffect(() => {
-    saveData('tabilog-okinawa-2026-data-v3', tripData);
-  }, [tripData]);
+    if (isDataLoaded) {
+      saveData('tabilog-okinawa-2026-data-v3', tripData);
+    }
+  }, [tripData, isDataLoaded]);
 
   // Generic helper to merge lists based on ID
   const mergeLists = <T extends { id: string }>(localList: T[], importedList: T[]): T[] => {

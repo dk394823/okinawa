@@ -55,7 +55,7 @@ export const loadData = async (key: string): Promise<any> => {
       const request = store.get(key);
 
       request.onsuccess = () => {
-          if (request.result !== undefined) {
+          if (request.result !== undefined && request.result !== null) {
               resolve(request.result);
           } else {
               // Fallback to localStorage for migration or if not in IDB
