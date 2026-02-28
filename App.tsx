@@ -536,7 +536,6 @@ export default function App() {
                 >
                     <span className={`text-[10px] font-bold tracking-widest uppercase mb-0.5 ${isActive ? 'opacity-90' : 'opacity-60'}`}>{d.weekday}</span>
                     <span className="text-xl font-black">{d.date.split('-')[2]}</span>
-                    {hasItems && !isActive && <div className="w-1 h-1 rounded-full bg-terracotta mt-1" />}
                 </button>
                 );
             })}
