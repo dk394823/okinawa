@@ -87,6 +87,18 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, isLast, onDelete, onEd
       onEdit();
   }
 
+  const renderTitle = (title: string) => {
+    const match = title.match(/^(.*)\s\((Check-in|Check-out)\)$/);
+    if (match) {
+      return (
+        <>
+          {match[1]} <span className="text-[10px] font-bold opacity-50 ml-1">({match[2]})</span>
+        </>
+      );
+    }
+    return title;
+  };
+
   return (
     <div className="relative pl-2 group">
       {/* Timeline Time & Dot - Centered Layout */}
@@ -137,7 +149,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, isLast, onDelete, onEd
              )}
         </div>
 
-        <h3 className="text-lg font-extrabold text-sumi mb-1 leading-snug tracking-tight pr-4">{item.title}</h3>
+        <h3 className="text-lg font-extrabold text-sumi mb-1 leading-snug tracking-tight pr-4">{renderTitle(item.title)}</h3>
         
         <div className="flex flex-col text-xs mb-4 tracking-wide">
           {(item.address || (item.location && item.location !== item.title)) && (
@@ -158,12 +170,10 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, isLast, onDelete, onEd
         {item.address && (
             <button 
               onClick={handleNavClick}
-              className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black tracking-widest transition-colors mt-2
-                ${item.type === ItemType.TRANSPORT ? 'bg-ocean text-white shadow-lg shadow-ocean/20' : 'bg-stone-50 text-stone-500 border border-stone-100 hover:bg-stone-100'}
-              `}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black tracking-widest transition-colors mt-2 bg-ocean text-white shadow-lg shadow-ocean/20"
             >
               <NavigationIcon className="w-3.5 h-3.5" />
-              {item.type === ItemType.TRANSPORT ? '開始導航' : '導航至此'}
+              開始導航
             </button>
         )}
       </div>
