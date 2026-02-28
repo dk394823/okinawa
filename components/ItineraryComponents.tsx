@@ -154,16 +154,18 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, isLast, onDelete, onEd
           </div>
         )}
 
-        {/* Action Button: Drive / Navigate */}
-        <button 
-          onClick={handleNavClick}
-          className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black tracking-widest transition-colors 
-            ${item.type === ItemType.TRANSPORT ? 'bg-ocean text-white shadow-lg shadow-ocean/20' : 'bg-stone-50 text-stone-500 border border-stone-100 hover:bg-stone-100'}
-          `}
-        >
-          <NavigationIcon className="w-3.5 h-3.5" />
-          {item.type === ItemType.TRANSPORT ? '開始導航' : '導航至此'}
-        </button>
+        {/* Action Button: Drive / Navigate - Only show if address exists */}
+        {item.address && (
+            <button 
+              onClick={handleNavClick}
+              className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black tracking-widest transition-colors mt-2
+                ${item.type === ItemType.TRANSPORT ? 'bg-ocean text-white shadow-lg shadow-ocean/20' : 'bg-stone-50 text-stone-500 border border-stone-100 hover:bg-stone-100'}
+              `}
+            >
+              <NavigationIcon className="w-3.5 h-3.5" />
+              {item.type === ItemType.TRANSPORT ? '開始導航' : '導航至此'}
+            </button>
+        )}
       </div>
     </div>
   );
@@ -222,10 +224,10 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onA
     let displayTitle = title;
     
     if (isHotel) {
-        if (hotelAction) {
-          displayTitle = `住宿 ${hotelAction}`;
+        if (location) {
+            displayTitle = hotelAction ? `${location} (${hotelAction})` : location;
         } else {
-          displayTitle = "住宿";
+            displayTitle = hotelAction ? `住宿 (${hotelAction})` : "住宿";
         }
     }
 
@@ -244,17 +246,13 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onA
         finalNote = title; // For hotel, note is note
     }
 
-    // Only fetch AI insight if adding new or if location changed drastically (simplified to always if not editing purely text)
-    // To save API, maybe skip if editing? Let's keep it for now but be mindful.
+    // Only fetch AI insight if adding new or if location changed
     let weather = initialData?.weatherForecast || '';
     
     if (!initialData || (initialData && initialData.location !== location)) {
         try {
             const insight = await getLocationInsight(location, date, type);
-            // Append tip to note if it's new
-            if (!initialData) {
-                 finalNote = finalNote ? `${finalNote}\n💡 ${insight.tip}` : `💡 ${insight.tip}`;
-            }
+            // We no longer append the AI tip to the notes as requested
             weather = insight.weather;
         } catch(err) {
             console.warn("Failed to get insight", err);

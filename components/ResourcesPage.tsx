@@ -302,27 +302,33 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
             const reader = new FileReader();
             reader.onload = (event) => {
                 const img = new Image();
+                img.onerror = () => alert("圖片讀取失敗");
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     const MAX_SIZE = 250; 
                     let width = img.width;
                     let height = img.height;
-                    if (width > height) {
-                        if (width > MAX_SIZE) {
-                            height *= MAX_SIZE / width;
-                            width = MAX_SIZE;
+                    
+                    if (width > 0 && height > 0) {
+                        if (width > height) {
+                            if (width > MAX_SIZE) {
+                                height *= MAX_SIZE / width;
+                                width = MAX_SIZE;
+                            }
+                        } else {
+                            if (height > MAX_SIZE) {
+                                width *= MAX_SIZE / height;
+                                height = MAX_SIZE;
+                            }
                         }
-                    } else {
-                        if (height > MAX_SIZE) {
-                            width *= MAX_SIZE / height;
-                            height = MAX_SIZE;
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                            ctx.drawImage(img, 0, 0, width, height);
+                            setContactAvatar(canvas.toDataURL('image/jpeg', 0.7));
                         }
                     }
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx?.drawImage(img, 0, 0, width, height);
-                    setContactAvatar(canvas.toDataURL('image/jpeg', 0.7));
                 }
                 img.src = event.target?.result as string;
             };
@@ -1243,20 +1249,55 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            // Basic size check: if > 10MB, alert early
+            if (file.size > 10 * 1024 * 1024) {
+                alert("檔案太大了，請選擇小於 10MB 的照片");
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = (event) => {
                 const img = new Image();
+                img.onerror = () => {
+                    alert("圖片讀取失敗");
+                };
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 600; 
-                    const scaleSize = MAX_WIDTH / img.width;
-                    canvas.width = MAX_WIDTH;
-                    canvas.height = img.height * scaleSize;
+                    const MAX_WIDTH = 800; 
+                    const MAX_HEIGHT = 800;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
                     const ctx = canvas.getContext('2d');
-                    ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    setNewItemImage(canvas.toDataURL('image/jpeg', 0.7));
+                    if (ctx) {
+                        ctx.drawImage(img, 0, 0, width, height);
+                        try {
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                            setNewItemImage(dataUrl);
+                        } catch (err) {
+                            console.error("Canvas toDataURL failed", err);
+                            alert("圖片處理失敗，請嘗試其他照片");
+                        }
+                    }
                 }
                 img.src = event.target?.result as string;
+            };
+            reader.onerror = () => {
+                alert("檔案讀取失敗");
             };
             reader.readAsDataURL(file);
         }
@@ -1268,9 +1309,9 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
             const reader = new FileReader();
             reader.onload = (event) => {
                 const img = new Image();
+                img.onerror = () => alert("圖片讀取失敗");
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    // Resize to 300x200 (3:2 ratio) for storage efficiency
                     const targetWidth = 300;
                     const targetHeight = 200;
                     canvas.width = targetWidth;
@@ -1278,13 +1319,14 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
                     
                     const ctx = canvas.getContext('2d');
                     if (ctx) {
-                        const scale = Math.min(targetWidth / img.width, targetHeight / img.height);
-                        const x = (targetWidth / 2) - (img.width / 2) * scale;
-                        const y = (targetHeight / 2) - (img.height / 2) * scale;
-                        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                        if (img.width > 0 && img.height > 0) {
+                            const scale = Math.max(targetWidth / img.width, targetHeight / img.height);
+                            const x = (targetWidth / 2) - (img.width / 2) * scale;
+                            const y = (targetHeight / 2) - (img.height / 2) * scale;
+                            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                            setNewCatImage(canvas.toDataURL('image/jpeg', 0.8));
+                        }
                     }
-                    
-                    setNewCatImage(canvas.toDataURL('image/png'));
                 }
                 img.src = event.target?.result as string;
             };
