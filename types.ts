@@ -93,11 +93,15 @@ export interface ShoppingItem {
   targetStores?: ConvenienceStoreType[]; // Which stores sell this
 }
 
-export interface ShoppingLocation {
+export interface Accommodation {
   id: string;
   name: string;
   address: string;
-  note?: string; // Description or note
+  checkInDate: string;
+  checkOutDate: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  note?: string;
 }
 
 export interface TripData {
@@ -112,7 +116,6 @@ export interface TripData {
   shoppingTitle: string;
   shoppingCategories: ShoppingCategory[]; 
   shoppingList: ShoppingItem[];
-  shoppingLocations: ShoppingLocation[];
-  shoppingLocationTitle: string; // Title for the Shopping Locations section
+  accommodations: Accommodation[];
   exchangeRate: number; // JPY to TWD
 }

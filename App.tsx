@@ -41,8 +41,7 @@ const INITIAL_TRIP_DATA: TripData = {
     shoppingTitle: "購物清單",
     shoppingCategories: INITIAL_SHOPPING_CATEGORIES,
     shoppingList: [],
-    shoppingLocations: [],
-    shoppingLocationTitle: "購物地點",
+    accommodations: [],
     exchangeRate: 0.22 
 };
 
@@ -286,8 +285,7 @@ export default function App() {
                 savedTripData.shoppingCategories = INITIAL_SHOPPING_CATEGORIES;
             }
             if (!savedTripData.shoppingTitle) savedTripData.shoppingTitle = "購物清單";
-            if (!savedTripData.shoppingLocations) savedTripData.shoppingLocations = [];
-            if (!savedTripData.shoppingLocationTitle) savedTripData.shoppingLocationTitle = "購物地點";
+            if (!savedTripData.accommodations) savedTripData.accommodations = [];
             setTripData({ ...INITIAL_TRIP_DATA, ...savedTripData });
         }
         setIsDataLoaded(true);
@@ -355,8 +353,8 @@ export default function App() {
                   return item;
               });
 
-              // 3. Merge Shopping Locations
-              const mergedLocations = mergeLists(tripData.shoppingLocations, importedTripData.shoppingLocations);
+              // 3. Merge Accommodations
+              const mergedAccommodations = mergeLists(tripData.accommodations || [], importedTripData.accommodations || []);
 
               // 4. Merge Expenses & Sort by Timestamp
               const mergedExpenses = mergeLists(tripData.expenses, importedTripData.expenses)
@@ -394,7 +392,7 @@ export default function App() {
                   ...importedTripData, // Base on import
                   contacts: mergedContacts,
                   shoppingList: mergedShoppingList,
-                  shoppingLocations: mergedLocations,
+                  accommodations: mergedAccommodations,
                   expenses: mergedExpenses,
                   shoppingCategories: mergedCategories
               };

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { TripData, FlightInfo, ItineraryState, ItemType, DaySchedule, ItineraryItem, ShoppingCategory, ShoppingColorType, ShoppingItem, Expense, ShoppingLocation, Contact, ConvenienceStoreType } from '../types';
-import { PlaneIcon, WalletIcon, PhoneIcon, BedIcon, ShoppingBagIcon, PlusIcon, CheckIcon, CalculatorIcon, ExchangeIcon, EditIcon, ZapIcon, ArrowLeftIcon, TrashIcon, PhotoIcon, UsersIcon, PaperPlaneIcon, MapPinIcon, NavigationIcon, CameraIcon, SimplePlaneIcon, PlaneTakeoffIcon, GlobeIcon, GamepadIcon, DollarIcon, CreditCardIcon, BanknoteIcon, GiftIcon, PillIcon, LipstickIcon, EyeDropIcon, ToothbrushIcon, TagIcon, CoinsIcon, StoreIcon, BoxIcon, HeartIcon, MaskIcon, DropIcon, ToothIcon, MujiIcon, ThreeCoinsIcon, ShoppingCartIcon, CrossIcon, BearIcon, DuckIcon, FlowerIcon, StarIcon } from './Icons';
+import { TripData, FlightInfo, ItineraryState, ItemType, DaySchedule, ItineraryItem, ShoppingCategory, ShoppingColorType, ShoppingItem, Expense, Contact, ConvenienceStoreType, Accommodation } from '../types';
+import { PlaneIcon, WalletIcon, PhoneIcon, BedIcon, ShoppingBagIcon, PlusIcon, CheckIcon, CalculatorIcon, ExchangeIcon, EditIcon, ZapIcon, ArrowLeftIcon, TrashIcon, PhotoIcon, UsersIcon, PaperPlaneIcon, MapPinIcon, NavigationIcon, CameraIcon, SimplePlaneIcon, PlaneTakeoffIcon, GlobeIcon, GamepadIcon, DollarIcon, CreditCardIcon, BanknoteIcon, GiftIcon, PillIcon, LipstickIcon, EyeDropIcon, ToothbrushIcon, TagIcon, CoinsIcon, StoreIcon, BoxIcon, HeartIcon, MaskIcon, DropIcon, ToothIcon, MujiIcon, ThreeCoinsIcon, ShoppingCartIcon, CrossIcon, BearIcon, DuckIcon, FlowerIcon, StarIcon, CalendarIcon, ClockIcon } from './Icons';
 
 interface ResourcesPageProps {
   tripData: TripData;
@@ -286,6 +286,17 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
     const fileInputRef = useRef<HTMLInputElement>(null);
     const contactFormRef = useRef<HTMLFormElement>(null);
 
+    // Accommodation Form State
+    const [hotelName, setHotelName] = useState('');
+    const [hotelAddress, setHotelAddress] = useState('');
+    const [checkInDate, setCheckInDate] = useState('');
+    const [checkOutDate, setCheckOutDate] = useState('');
+    const [checkInTime, setCheckInTime] = useState('');
+    const [checkOutTime, setCheckOutTime] = useState('');
+    const [hotelNote, setHotelNote] = useState('');
+    const [editingHotelId, setEditingHotelId] = useState<string | null>(null);
+    const hotelFormRef = useRef<HTMLFormElement>(null);
+
     const updateFlights = (group: 'north' | 'south', out: FlightInfo, inb: FlightInfo) => {
         setTripData({
             ...tripData,
@@ -293,6 +304,65 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
                 ...tripData.flights,
                 [group]: { outbound: out, inbound: inb }
             }
+        });
+    };
+
+    const handleSaveAccommodation = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!hotelName.trim()) return;
+
+        const hotelData: Accommodation = {
+            id: editingHotelId || Date.now().toString(),
+            name: hotelName,
+            address: hotelAddress,
+            checkInDate,
+            checkOutDate,
+            checkInTime,
+            checkOutTime,
+            note: hotelNote
+        };
+
+        if (editingHotelId) {
+            setTripData({
+                ...tripData,
+                accommodations: tripData.accommodations.map(h => h.id === editingHotelId ? hotelData : h)
+            });
+            setEditingHotelId(null);
+        } else {
+            setTripData({
+                ...tripData,
+                accommodations: [...tripData.accommodations, hotelData]
+            });
+        }
+
+        // Reset
+        setHotelName('');
+        setHotelAddress('');
+        setCheckInDate('');
+        setCheckOutDate('');
+        setCheckInTime('');
+        setCheckOutTime('');
+        setHotelNote('');
+    };
+
+    const handleEditHotel = (h: Accommodation) => {
+        setHotelName(h.name);
+        setHotelAddress(h.address);
+        setCheckInDate(h.checkInDate);
+        setCheckOutDate(h.checkOutDate);
+        setCheckInTime(h.checkInTime || '');
+        setCheckOutTime(h.checkOutTime || '');
+        setHotelNote(h.note || '');
+        setEditingHotelId(h.id);
+        if (hotelFormRef.current) {
+            hotelFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    };
+
+    const handleDeleteHotel = (id: string) => {
+        setTripData({
+            ...tripData,
+            accommodations: tripData.accommodations.filter(h => h.id !== id)
         });
     };
 
@@ -385,10 +455,6 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
         }
     }
     
-    const hotelList = Object.values(itinerary)
-    .flatMap((day: DaySchedule) => day.items.filter((item: ItineraryItem) => item.type === ItemType.HOTEL))
-    .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-
     const renderAvatar = (avatarStr?: string, name?: string) => {
         if (avatarStr) {
              return <img src={avatarStr} alt="avatar" className="w-full h-full object-cover bg-stone-50" />;
@@ -434,28 +500,151 @@ const InfoSection = ({ tripData, setTripData, itinerary }: { tripData: TripData,
                     </div>
                     <h2 className="text-lg font-black text-sumi">住宿清單</h2>
                 </div>
-                <div className="bg-white rounded-2xl p-6 border border-stone-100 shadow-soft">
-                    {hotelList.length === 0 ? (
-                        <p className="text-center text-stone-300 text-xs py-2">請於行程頁面加入住宿</p>
+                
+                <div className="space-y-4 mb-8">
+                    {tripData.accommodations.length === 0 ? (
+                        <div className="bg-white rounded-2xl p-8 border border-stone-100 shadow-soft text-center">
+                            <p className="text-stone-300 text-xs">尚無住宿資訊</p>
+                        </div>
                     ) : (
-                        <div className="space-y-6">
-                            {hotelList.map((hotel, idx) => (
-                                <div key={idx} className="flex gap-4 items-start pb-6 border-b border-dashed border-stone-100 last:border-0 last:pb-0">
-                                    <div className="w-16 pt-0.5">
-                                         <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider">
-                                            {(Object.values(itinerary) as DaySchedule[]).find(d => d.items.includes(hotel))?.date.slice(5)}
-                                         </span>
-                                        <span className="block text-xs font-mono font-bold text-sumi mt-1">{hotel.time}</span>
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="font-extrabold text-sumi text-sm">{hotel.location}</h4>
-                                        <p className="text-xs text-stone-500 mt-1 whitespace-pre-line leading-relaxed">{hotel.notes || hotel.title}</p>
+                        tripData.accommodations.map((hotel) => (
+                            <div key={hotel.id} className={`bg-white rounded-2xl p-5 border shadow-soft transition-all ${editingHotelId === hotel.id ? 'border-ocean ring-1 ring-ocean/20' : 'border-stone-100'}`}>
+                                <div className="flex justify-between items-start mb-3">
+                                    <h4 className="font-black text-sumi text-base">{hotel.name}</h4>
+                                    <div className="flex gap-1">
+                                        <button onClick={() => handleEditHotel(hotel)} className="p-2 text-stone-300 hover:text-ocean transition-colors">
+                                            <EditIcon className="w-4 h-4" />
+                                        </button>
+                                        <DeleteButton onDelete={() => handleDeleteHotel(hotel.id)} className="p-2 text-stone-300 hover:text-coral transition-colors" />
                                     </div>
                                 </div>
-                            ))}
-                        </div>
+
+                                <div className="space-y-2.5">
+                                    <div className="flex items-center gap-2 text-xs text-stone-500 font-bold">
+                                        <CalendarIcon className="w-3.5 h-3.5 opacity-50" />
+                                        <span>{hotel.checkInDate.slice(5)} ~ {hotel.checkOutDate.slice(5)}</span>
+                                    </div>
+                                    
+                                    {(hotel.checkInTime || hotel.checkOutTime) && (
+                                        <div className="flex items-center gap-4 text-[10px] text-stone-400 font-mono font-bold">
+                                            {hotel.checkInTime && (
+                                                <div className="flex items-center gap-1">
+                                                    <ClockIcon className="w-3 h-3 opacity-40" />
+                                                    <span>IN: {hotel.checkInTime}</span>
+                                                </div>
+                                            )}
+                                            {hotel.checkOutTime && (
+                                                <div className="flex items-center gap-1">
+                                                    <ClockIcon className="w-3 h-3 opacity-40" />
+                                                    <span>OUT: {hotel.checkOutTime}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {hotel.address && (
+                                        <div className="flex items-start gap-2 text-xs text-stone-400 group cursor-pointer" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hotel.name + ' ' + hotel.address)}`, '_blank')}>
+                                            <MapPinIcon className="w-3.5 h-3.5 mt-0.5 opacity-50 flex-shrink-0" />
+                                            <span className="underline decoration-stone-200 underline-offset-2 hover:text-ocean transition-colors">{hotel.address}</span>
+                                        </div>
+                                    )}
+
+                                    {hotel.note && (
+                                        <div className="mt-2 p-3 bg-stone-50 rounded-xl text-[11px] text-stone-500 leading-relaxed whitespace-pre-line border-l-2 border-stone-200">
+                                            {hotel.note}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))
                     )}
                 </div>
+
+                {/* Add/Edit Hotel Form */}
+                <form ref={hotelFormRef} onSubmit={handleSaveAccommodation} className={`bg-stone-50 border border-stone-100 border-dashed rounded-2xl p-5 flex flex-col gap-4 transition-colors scroll-mt-24 ${editingHotelId ? 'bg-ocean/5 border-ocean/20' : ''}`}>
+                    <p className={`text-xs font-black tracking-widest ${editingHotelId ? 'text-ocean' : 'text-stone-400'}`}>
+                        {editingHotelId ? '編輯住宿資訊' : '新增住宿資訊'}
+                    </p>
+                    
+                    <div className="space-y-3">
+                        <input 
+                            type="text" 
+                            placeholder="飯店名稱" 
+                            value={hotelName}
+                            onChange={e => setHotelName(e.target.value)}
+                            className="w-full bg-white px-4 py-3 rounded-xl text-sm outline-none shadow-sm font-bold"
+                            required
+                        />
+                        <input 
+                            type="text" 
+                            placeholder="地址" 
+                            value={hotelAddress}
+                            onChange={e => setHotelAddress(e.target.value)}
+                            className="w-full bg-white px-4 py-3 rounded-xl text-sm outline-none shadow-sm"
+                        />
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-[10px] font-bold text-stone-400 uppercase mb-1.5 block ml-1">入住日期</label>
+                                <input 
+                                    type="date" 
+                                    value={checkInDate}
+                                    onChange={e => setCheckInDate(e.target.value)}
+                                    className="w-full bg-white px-3 py-2.5 rounded-xl text-xs outline-none shadow-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-stone-400 uppercase mb-1.5 block ml-1">退房日期</label>
+                                <input 
+                                    type="date" 
+                                    value={checkOutDate}
+                                    onChange={e => setCheckOutDate(e.target.value)}
+                                    className="w-full bg-white px-3 py-2.5 rounded-xl text-xs outline-none shadow-sm"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-[10px] font-bold text-stone-400 uppercase mb-1.5 block ml-1">Check-in 時間</label>
+                                <input 
+                                    type="time" 
+                                    value={checkInTime}
+                                    onChange={e => setCheckInTime(e.target.value)}
+                                    className="w-full bg-white px-3 py-2.5 rounded-xl text-xs outline-none shadow-sm font-mono"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-stone-400 uppercase mb-1.5 block ml-1">Check-out 時間</label>
+                                <input 
+                                    type="time" 
+                                    value={checkOutTime}
+                                    onChange={e => setCheckOutTime(e.target.value)}
+                                    className="w-full bg-white px-3 py-2.5 rounded-xl text-xs outline-none shadow-sm font-mono"
+                                />
+                            </div>
+                        </div>
+
+                        <textarea 
+                            placeholder="備註 (如：訂房編號、車位資訊...)" 
+                            value={hotelNote}
+                            onChange={e => setHotelNote(e.target.value)}
+                            className="w-full bg-white px-4 py-3 rounded-xl text-xs outline-none shadow-sm resize-none"
+                            rows={2}
+                        />
+                    </div>
+
+                    <div className="flex gap-2">
+                        {editingHotelId && (
+                            <button type="button" onClick={() => { setEditingHotelId(null); setHotelName(''); setHotelAddress(''); setCheckInDate(''); setCheckOutDate(''); setCheckInTime(''); setCheckOutTime(''); setHotelNote(''); }} className="flex-1 bg-stone-200 text-stone-500 font-bold py-3 rounded-xl text-xs">
+                                取消
+                            </button>
+                        )}
+                        <button type="submit" className="flex-1 bg-sumi text-white font-bold py-3 rounded-xl text-xs hover:bg-black transition-all shadow-md">
+                            {editingHotelId ? '更新住宿' : '新增住宿'}
+                        </button>
+                    </div>
+                </form>
             </section>
 
             {/* Emergency */}
@@ -1227,20 +1416,13 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
     const [isCreatingCategory, setIsCreatingCategory] = useState(false);
     const [isEditingCategory, setIsEditingCategory] = useState<string | null>(null);
     const [newCatName, setNewCatName] = useState('');
-    // Remove icon selection state since we rely on custom image or default
     const [newCatImage, setNewCatImage] = useState<string | undefined>(undefined);
 
     const [viewingItem, setViewingItem] = useState<ShoppingItem | null>(null);
-    const [newLocName, setNewLocName] = useState('');
-    const [newLocAddress, setNewLocAddress] = useState('');
-    const [newLocNote, setNewLocNote] = useState('');
-    const [editingLocId, setEditingLocId] = useState<string | null>(null);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
-    const [isEditingLocTitle, setIsEditingLocTitle] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const catFileInputRef = useRef<HTMLInputElement>(null);
-    const locationFormRef = useRef<HTMLFormElement>(null);
     const itemFormRef = useRef<HTMLDivElement>(null);
 
     const activeCategory = tripData.shoppingCategories.find(c => c.id === activeCategoryId);
@@ -1425,50 +1607,6 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
             shoppingList: tripData.shoppingList.filter(i => i.categoryId !== id)
         });
         setActiveCategoryId(null);
-    };
-
-    const handleAddLocation = (e: React.FormEvent) => {
-        e.preventDefault();
-        if(!newLocName) return;
-
-        if (editingLocId) {
-             setTripData({
-                ...tripData,
-                shoppingLocations: tripData.shoppingLocations.map(loc => loc.id === editingLocId ? { ...loc, name: newLocName, address: newLocAddress, note: newLocNote } : loc)
-            });
-            setEditingLocId(null);
-        } else {
-            setTripData({
-                ...tripData,
-                shoppingLocations: [...tripData.shoppingLocations, {
-                    id: Date.now().toString(),
-                    name: newLocName,
-                    address: newLocAddress,
-                    note: newLocNote
-                }]
-            });
-        }
-        setNewLocName('');
-        setNewLocAddress('');
-        setNewLocNote('');
-    };
-
-    const handleDeleteLocation = (id: string) => {
-        setTripData({
-            ...tripData,
-            shoppingLocations: tripData.shoppingLocations.filter(l => l.id !== id)
-        });
-    };
-
-    const handleEditLocation = (loc: ShoppingLocation) => {
-        setNewLocName(loc.name);
-        setNewLocAddress(loc.address);
-        setNewLocNote(loc.note || '');
-        setEditingLocId(loc.id);
-        
-        if (locationFormRef.current) {
-            locationFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
     };
 
     const startEditCategory = (cat: ShoppingCategory, e: React.MouseEvent) => {
@@ -1688,89 +1826,6 @@ const ShoppingSection = ({ tripData, setTripData }: { tripData: TripData, setTri
 
     return (
         <div className="pb-24 space-y-10 px-7">
-            {/* Shopping Locations */}
-            <section>
-                 <div className="flex items-center gap-3 mb-6 mt-0">
-                    <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center">
-                        <MapPinIcon className="w-4 h-4 text-stone-500" />
-                    </div>
-                    {isEditingLocTitle ? (
-                        <input 
-                            type="text" 
-                            value={tripData.shoppingLocationTitle}
-                            onChange={(e) => setTripData({...tripData, shoppingLocationTitle: e.target.value})}
-                            onBlur={() => setIsEditingLocTitle(false)}
-                            autoFocus
-                            className="text-lg font-black text-sumi bg-transparent outline-none border-b border-stone-300 w-48"
-                        />
-                    ) : (
-                         <h2 onClick={() => setIsEditingLocTitle(true)} className="text-lg font-black text-sumi flex items-center gap-2">
-                            {tripData.shoppingLocationTitle}
-                            <EditIcon className="w-4 h-4 text-stone-200" />
-                        </h2>
-                    )}
-                </div>
-
-                <div className="space-y-4 mb-8">
-                    {tripData.shoppingLocations.map(loc => (
-                        <div key={loc.id} className={`bg-white p-4 rounded-2xl border shadow-soft flex justify-between items-start transition-colors ${editingLocId === loc.id ? 'border-terracotta ring-1 ring-terracotta bg-orange-50/10' : 'border-stone-100'}`}>
-                             <div className="flex-1 pr-4">
-                                 <h4 className="font-extrabold text-sumi text-sm">{loc.name}</h4>
-                                 <p className="text-xs text-stone-400 mt-1">{loc.address}</p>
-                                 {loc.note && <p className="text-xs text-stone-500 mt-2 bg-stone-50 p-2 rounded-lg">{loc.note}</p>}
-                             </div>
-                             <div className="flex flex-col gap-2">
-                                <button 
-                                    onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.name + ' ' + loc.address)}`, '_blank')}
-                                    className="p-2 bg-ocean/10 text-ocean rounded-full hover:bg-ocean/20"
-                                >
-                                    <PaperPlaneIcon className="w-4 h-4" />
-                                </button>
-                                <button onClick={() => handleEditLocation(loc)} className={`p-2 rounded-full hover:bg-stone-100 ${editingLocId === loc.id ? 'bg-terracotta text-white hover:bg-terracotta' : 'bg-stone-50 text-stone-400'}`}>
-                                    <EditIcon className="w-4 h-4" />
-                                </button>
-                                <DeleteButton onDelete={() => handleDeleteLocation(loc.id)} className="p-2 bg-stone-50 text-stone-400 rounded-full hover:bg-stone-100" />
-                             </div>
-                        </div>
-                    ))}
-                </div>
-
-                <form ref={locationFormRef} onSubmit={handleAddLocation} className={`bg-stone-50 border border-stone-100 border-dashed rounded-2xl p-4 mb-10 scroll-mt-28 transition-colors ${editingLocId ? 'bg-orange-50/50 border-orange-100' : ''}`}>
-                    <p className={`text-xs font-bold mb-3 ${editingLocId ? 'text-terracotta' : 'text-stone-400'}`}>
-                        {editingLocId ? `正在編輯：${newLocName}` : '新增地點'}
-                    </p>
-                    <div className="space-y-3">
-                        <input 
-                            type="text" 
-                            placeholder="地點名稱"
-                            value={newLocName}
-                            onChange={e => setNewLocName(e.target.value)}
-                            className="w-full bg-white bg-white px-4 py-3 rounded-xl text-xs outline-none shadow-sm"
-                        />
-                        <input 
-                            type="text" 
-                            placeholder="地址/區域 (用於導航)"
-                            value={newLocAddress}
-                            onChange={e => setNewLocAddress(e.target.value)}
-                            className="w-full bg-white px-4 py-3 rounded-xl text-xs outline-none shadow-sm"
-                        />
-                        <textarea 
-                            placeholder="備註/介紹 (選填)"
-                            value={newLocNote}
-                            onChange={e => setNewLocNote(e.target.value)}
-                            className="w-full bg-white px-4 py-3 rounded-xl text-xs outline-none shadow-sm resize-none"
-                            rows={2}
-                        />
-                        <div className="flex gap-2">
-                             {editingLocId && <button type="button" onClick={() => { setEditingLocId(null); setNewLocName(''); setNewLocAddress(''); setNewLocNote(''); }} className="flex-1 bg-stone-200 text-stone-500 font-bold py-3 rounded-xl text-xs">取消</button>}
-                             <button type="submit" disabled={!newLocName} className="flex-1 bg-sumi text-white font-bold py-3 rounded-xl text-xs disabled:opacity-50 transition-all active:scale-[0.98]">
-                                {editingLocId ? '更新地點' : '新增地點'}
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </section>
-            
             {/* Shopping Lists Categories */}
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
